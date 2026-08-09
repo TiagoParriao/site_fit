@@ -1,12 +1,5 @@
 import MedalBadge from './MedalBadge'
-
-const COLORS = ['#ff6b6b', '#4dabf7', '#51cf66', '#ffd43b', '#cc5de8', '#ff922b', '#20c997']
-
-function colorFor(userId) {
-  let hash = 0
-  for (const ch of userId) hash = (hash * 31 + ch.charCodeAt(0)) % COLORS.length
-  return COLORS[hash]
-}
+import { colorForUser } from '../lib/avatarColor'
 
 function initials(nome) {
   return (nome || '?').trim().charAt(0).toUpperCase()
@@ -30,7 +23,7 @@ export default function ProgressTrail({ lanes, emptyMessage }) {
             <div className="trail-finish-line" style={{ left: '100%' }} />
             <div
               className="trail-avatar"
-              style={{ left: `${lane.pct}%`, backgroundColor: colorFor(lane.user_id) }}
+              style={{ left: `${lane.pct}%`, backgroundColor: colorForUser(lane.user_id) }}
               title={lane.nome}
             >
               {initials(lane.nome)}

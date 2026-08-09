@@ -549,6 +549,17 @@ button:disabled {
   border-color: var(--primary);
 }
 
+/* Kcal history chart */
+
+.kcal-chart-scroll {
+  overflow-x: auto;
+}
+
+.kcal-chart {
+  display: block;
+  height: 220px;
+}
+
 /* Exercise chart */
 
 .exercise-chart {

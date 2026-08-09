@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
+import { colorForUser } from '../lib/avatarColor'
 import PeriodSelector from './PeriodSelector'
+import KcalHistoryChart from './KcalHistoryChart'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -12,7 +14,7 @@ export default function KcalHistoryPanel({ group, members }) {
   const [date, setDate] = useState(todayISO())
   const [start, setStart] = useState(todayISO())
   const [end, setEnd] = useState(todayISO())
-  const [result, setResult] = useState({ rows: [] })
+  const [result, setResult] = useState({ rows: [], chartDates: [], chartSeries: [] })
   const [editingTitle, setEditingTitle] = useState(false)
   const [tituloDraft, setTituloDraft] = useState('')
   const [tituloAtual, setTituloAtual] = useState(group?.kcal_titulo || 'Histórico de calorias')
@@ -86,6 +88,16 @@ export default function KcalHistoryPanel({ group, members }) {
         <p className="empty-state">Nenhum membro no grupo.</p>
       ) : (
         <>
+          <KcalHistoryChart dates={result.chartDates} series={result.chartSeries} />
+          <div className="chart-legend">
+            {result.rows.map((r) => (
+              <span key={r.user_id}>
+                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id) }} />
+                {r.nome} — {r.totalPeriodo} kcal
+              </span>
+            ))}
+          </div>
+
           <table className="table">
             <thead>
               <tr>

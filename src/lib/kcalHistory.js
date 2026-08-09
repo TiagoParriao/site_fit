@@ -3,7 +3,7 @@ import { resolvePeriodRange } from './periods'
 export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
   const { start, end } = resolvePeriodRange(preset, opts)
   const userIds = members.map((m) => m.user_id)
-  if (userIds.length === 0) return { start, end, rows: [] }
+  if (userIds.length === 0) return { start, end, rows: [], chartDates: [], chartSeries: [] }
 
   const { data } = await supabase
     .from('calorie_logs')
@@ -13,9 +13,11 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
     .lte('data', end)
 
   const totals = {}
+  const datesSet = new Set()
   for (const row of data ?? []) {
     totals[row.user_id] ??= {}
     totals[row.user_id][row.data] = (totals[row.user_id][row.data] ?? 0) + row.kcal
+    datesSet.add(row.data)
   }
 
   const rows = members.map((m) => {
@@ -32,8 +34,16 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
       diasRegistrados: days.length,
       diasEstourados: days.filter((d) => d.over).length,
       diasEstouradosLista: days.filter((d) => d.over),
+      totalPeriodo: days.reduce((sum, d) => sum + d.total, 0),
     }
   })
 
-  return { start, end, rows }
+  const chartDates = [...datesSet].sort()
+  const chartSeries = members.map((m) => ({
+    user_id: m.user_id,
+    nome: m.nome,
+    values: chartDates.map((d) => totals[m.user_id]?.[d] ?? 0),
+  }))
+
+  return { start, end, rows, chartDates, chartSeries }
 }
