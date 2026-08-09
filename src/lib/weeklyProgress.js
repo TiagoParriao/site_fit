@@ -56,3 +56,24 @@ export async function fetchWeeklyProgress(supabase, members, goalDays = 5) {
   }
   return result
 }
+
+export async function fetchOverBudgetHistory(supabase, userId, meta) {
+  const { data: rows } = await supabase
+    .from('calorie_logs')
+    .select('data, kcal')
+    .eq('user_id', userId)
+
+  const totals = {}
+  for (const row of rows ?? []) {
+    totals[row.data] = (totals[row.data] ?? 0) + row.kcal
+  }
+
+  const days = Object.entries(totals).sort(([a], [b]) => (a < b ? 1 : -1))
+  const overBudgetDays = days.filter(([, total]) => total > meta).map(([data, total]) => ({ data, total }))
+
+  return {
+    totalDias: days.length,
+    diasEstourados: overBudgetDays.length,
+    ultimosEstourados: overBudgetDays.slice(0, 10),
+  }
+}

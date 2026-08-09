@@ -126,8 +126,8 @@ export default function Weight() {
           <tbody>
             {logs.map((log) => (
               <tr key={log.id}>
-                <td>{new Date(log.data).toLocaleDateString('pt-BR')}</td>
-                <td>{log.peso_kg}kg</td>
+                <td data-label="Data">{new Date(log.data).toLocaleDateString('pt-BR')}</td>
+                <td data-label="Peso">{log.peso_kg}kg</td>
               </tr>
             ))}
           </tbody>

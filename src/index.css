@@ -142,6 +142,101 @@ a {
   }
 }
 
+@media (max-width: 640px) {
+  .page {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  h1 {
+    font-size: 22px;
+  }
+
+  .card {
+    padding: 16px;
+    border-radius: 12px;
+  }
+
+  .navbar {
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 10px 14px;
+  }
+
+  .navbar-brand {
+    font-size: 16px;
+  }
+
+  .navbar-links {
+    order: 3;
+    flex-basis: 100%;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .navbar-links a {
+    padding: 6px 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .navbar-user {
+    margin-left: auto;
+    font-size: 14px;
+  }
+
+  .form-actions {
+    flex-wrap: wrap;
+  }
+
+  button {
+    align-self: stretch;
+  }
+
+  .form-actions button,
+  .form-actions .link-button {
+    align-self: auto;
+  }
+}
+
+@media (max-width: 520px) {
+  .table thead {
+    display: none;
+  }
+
+  .table,
+  .table tbody,
+  .table tr,
+  .table td {
+    display: block;
+    width: 100%;
+  }
+
+  .table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: none;
+  }
+
+  .table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .table td:empty {
+    display: none;
+  }
+}
+
 label {
   display: flex;
   flex-direction: column;
@@ -364,4 +459,68 @@ button:disabled {
 
 .medal-badge {
   font-size: 16px;
+}
+
+/* Form actions */
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Daily kcal board */
+
+.daily-kcal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.daily-kcal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.daily-kcal-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.daily-kcal-name {
+  font-weight: 600;
+}
+
+.daily-kcal-value {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.daily-kcal-value.over {
+  color: var(--danger);
+}
+
+/* Over-budget history */
+
+.overbudget-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.overbudget-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-muted);
 }

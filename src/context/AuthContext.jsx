@@ -69,6 +69,12 @@ export function AuthProvider({ children }) {
     await supabase.auth.signOut()
   }
 
+  async function updateProfile(updates) {
+    const { error } = await supabase.from('profiles').update(updates).eq('id', session.user.id)
+    if (error) throw error
+    await loadProfile(session.user.id)
+  }
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -77,6 +83,7 @@ export function AuthProvider({ children }) {
     signUp,
     signIn,
     signOut,
+    updateProfile,
     refreshProfile: () => loadProfile(session?.user?.id),
   }
 

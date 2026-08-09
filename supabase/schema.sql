@@ -38,6 +38,25 @@ create table if not exists public.calorie_logs (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.exercise_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  minutos integer not null,
+  kcal_gasta integer not null,
+  descricao text,
+  data date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.main_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  titulo text not null,
+  dias_totais integer not null,
+  data_inicio date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
 create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
@@ -55,6 +74,8 @@ create table if not exists public.group_members (
 
 create index if not exists weight_logs_user_data_idx on public.weight_logs (user_id, data);
 create index if not exists calorie_logs_user_data_idx on public.calorie_logs (user_id, data);
+create index if not exists exercise_logs_user_data_idx on public.exercise_logs (user_id, data);
+create index if not exists main_goals_user_idx on public.main_goals (user_id);
 create index if not exists group_members_user_idx on public.group_members (user_id);
 
 -- ============ HELPER: usuários que compartilham grupo ============
@@ -80,6 +101,8 @@ alter table public.profiles enable row level security;
 alter table public.weight_logs enable row level security;
 alter table public.weight_goals enable row level security;
 alter table public.calorie_logs enable row level security;
+alter table public.exercise_logs enable row level security;
+alter table public.main_goals enable row level security;
 alter table public.groups enable row level security;
 alter table public.group_members enable row level security;
 
@@ -130,6 +153,32 @@ create policy "calorie_logs_update_self" on public.calorie_logs
   for update using (user_id = auth.uid());
 
 create policy "calorie_logs_delete_self" on public.calorie_logs
+  for delete using (user_id = auth.uid());
+
+-- exercise_logs
+create policy "exercise_logs_select_self_or_group" on public.exercise_logs
+  for select using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "exercise_logs_insert_self" on public.exercise_logs
+  for insert with check (user_id = auth.uid());
+
+create policy "exercise_logs_update_self" on public.exercise_logs
+  for update using (user_id = auth.uid());
+
+create policy "exercise_logs_delete_self" on public.exercise_logs
+  for delete using (user_id = auth.uid());
+
+-- main_goals
+create policy "main_goals_select_self_or_group" on public.main_goals
+  for select using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "main_goals_insert_self" on public.main_goals
+  for insert with check (user_id = auth.uid());
+
+create policy "main_goals_update_self" on public.main_goals
+  for update using (user_id = auth.uid());
+
+create policy "main_goals_delete_self" on public.main_goals
   for delete using (user_id = auth.uid());
 
 -- groups: apenas membros podem ver o grupo (criação e entrada acontecem via RPCs abaixo)
