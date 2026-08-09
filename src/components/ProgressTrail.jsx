@@ -12,48 +12,32 @@ function initials(nome) {
   return (nome || '?').trim().charAt(0).toUpperCase()
 }
 
-export default function ProgressTrail({ members, progress, goalDays = 5 }) {
-  if (!members || members.length === 0) {
-    return <p className="empty-state">Entre ou crie um grupo para ver a trilha da semana.</p>
+export default function ProgressTrail({ lanes, emptyMessage }) {
+  if (!lanes || lanes.length === 0) {
+    return <p className="empty-state">{emptyMessage ?? 'Nada para mostrar ainda.'}</p>
   }
-
-  const ranked = members
-    .map((m) => ({ member: m, reachDate: progress[m.user_id]?.reachDate ?? null }))
-    .filter((r) => r.reachDate)
-    .sort((a, b) => new Date(a.reachDate) - new Date(b.reachDate))
-  const rankByUser = Object.fromEntries(ranked.map((r, i) => [r.member.user_id, i + 1]))
 
   return (
     <div className="progress-trail">
-      <div className="trail-finish-label">
-        🏁 Meta da semana: {goalDays} de 7 dias dentro da meta de calorias
-      </div>
-      {members.map((member) => {
-        const p = progress[member.user_id] ?? { daysMet: 0 }
-        const pct = Math.min(100, (p.daysMet / goalDays) * 100)
-        const rank = rankByUser[member.user_id]
-        return (
-          <div className="trail-lane" key={member.user_id}>
-            <div className="trail-lane-label">
-              <span>{member.nome}</span>
-              <MedalBadge rank={rank} />
-              <span className="trail-lane-count">
-                {p.daysMet}/{goalDays}
-              </span>
-            </div>
-            <div className="trail-track">
-              <div className="trail-finish-line" style={{ left: '100%' }} />
-              <div
-                className="trail-avatar"
-                style={{ left: `${pct}%`, backgroundColor: colorFor(member.user_id) }}
-                title={member.nome}
-              >
-                {initials(member.nome)}
-              </div>
+      {lanes.map((lane) => (
+        <div className="trail-lane" key={lane.user_id}>
+          <div className="trail-lane-label">
+            <span>{lane.nome}</span>
+            <MedalBadge rank={lane.rank} />
+            <span className="trail-lane-count">{lane.label}</span>
+          </div>
+          <div className="trail-track">
+            <div className="trail-finish-line" style={{ left: '100%' }} />
+            <div
+              className="trail-avatar"
+              style={{ left: `${lane.pct}%`, backgroundColor: colorFor(lane.user_id) }}
+              title={lane.nome}
+            >
+              {initials(lane.nome)}
             </div>
           </div>
-        )
-      })}
+        </div>
+      ))}
     </div>
   )
 }

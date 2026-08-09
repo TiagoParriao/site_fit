@@ -12,8 +12,6 @@ export default function NavBar() {
           Trilha
         </NavLink>
         <NavLink to="/peso">Peso</NavLink>
-        <NavLink to="/calorias">Calorias</NavLink>
-        <NavLink to="/exercicio">Exercício</NavLink>
         <NavLink to="/grupo">Grupo</NavLink>
       </div>
       <div className="navbar-user">

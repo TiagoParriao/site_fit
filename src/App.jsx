@@ -6,8 +6,6 @@ import Login from './routes/Login'
 import Signup from './routes/Signup'
 import Dashboard from './routes/Dashboard'
 import Weight from './routes/Weight'
-import Calories from './routes/Calories'
-import Exercise from './routes/Exercise'
 import Group from './routes/Group'
 
 function AppLayout({ children }) {
@@ -39,22 +37,6 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Weight />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/calorias"
-          element={
-            <ProtectedRoute>
-              <Calories />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/exercicio"
-          element={
-            <ProtectedRoute>
-              <Exercise />
             </ProtectedRoute>
           }
         />

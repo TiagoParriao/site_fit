@@ -1,12 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import PeriodSelector from './PeriodSelector'
+import ExerciseChart from './ExerciseChart'
+import { fetchExerciseHistory } from '../lib/exerciseHistory'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export default function Exercise() {
+export default function ExerciseSection() {
   const { user } = useAuth()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -16,6 +19,12 @@ export default function Exercise() {
   const [minutos, setMinutos] = useState('')
   const [kcalGasta, setKcalGasta] = useState('')
   const [descricao, setDescricao] = useState('')
+
+  const [preset, setPreset] = useState('semana')
+  const [chartDate, setChartDate] = useState(todayISO())
+  const [chartStart, setChartStart] = useState(todayISO())
+  const [chartEnd, setChartEnd] = useState(todayISO())
+  const [chartData, setChartData] = useState({ days: [] })
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -29,9 +38,22 @@ export default function Exercise() {
     setLoading(false)
   }, [user.id])
 
+  const loadChart = useCallback(async () => {
+    const result = await fetchExerciseHistory(supabase, user.id, preset, {
+      date: chartDate,
+      start: chartStart,
+      end: chartEnd,
+    })
+    setChartData(result)
+  }, [user.id, preset, chartDate, chartStart, chartEnd])
+
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    loadChart()
+  }, [loadChart])
 
   async function handleAdd(e) {
     e.preventDefault()
@@ -52,34 +74,33 @@ export default function Exercise() {
     setDescricao('')
     setData(todayISO())
     load()
+    loadChart()
   }
 
   async function handleDelete(id) {
     await supabase.from('exercise_logs').delete().eq('id', id)
     load()
+    loadChart()
   }
 
-  const totalMinutos = entries.reduce((sum, e) => sum + e.minutos, 0)
-  const totalKcal = entries.reduce((sum, e) => sum + e.kcal_gasta, 0)
-
   return (
-    <div className="page">
-      <h1>Exercício</h1>
+    <div className="card">
+      <h2>Exercício</h2>
       {error && <p className="error">{error}</p>}
 
-      <div className="grid-2">
-        <div className="card">
-          <h2>Minutos (últimos registros)</h2>
-          <p className="big-number">{totalMinutos} min</p>
-        </div>
-        <div className="card">
-          <h2>Kcal gastas (últimos registros)</h2>
-          <p className="big-number">{totalKcal} kcal</p>
-        </div>
-      </div>
+      <PeriodSelector
+        preset={preset}
+        onPresetChange={setPreset}
+        date={chartDate}
+        onDateChange={setChartDate}
+        start={chartStart}
+        onStartChange={setChartStart}
+        end={chartEnd}
+        onEndChange={setChartEnd}
+      />
+      <ExerciseChart days={chartData.days} />
 
-      <form className="card" onSubmit={handleAdd}>
-        <h2>Registrar exercício</h2>
+      <form className="stacked-form" onSubmit={handleAdd}>
         <div className="grid-3">
           <label>
             Dia
@@ -98,44 +119,41 @@ export default function Exercise() {
           Descrição
           <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: corrida, musculação..." />
         </label>
-        <button type="submit">Adicionar</button>
+        <button type="submit">Adicionar exercício</button>
       </form>
 
-      <div className="card">
-        <h2>Histórico</h2>
-        {loading ? (
-          <p>Carregando...</p>
-        ) : entries.length === 0 ? (
-          <p className="empty-state">Nada registrado ainda.</p>
-        ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Dia</th>
-                <th>Descrição</th>
-                <th>Minutos</th>
-                <th>Kcal</th>
-                <th></th>
+      {loading ? (
+        <p>Carregando...</p>
+      ) : entries.length === 0 ? (
+        <p className="empty-state">Nada registrado ainda.</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Dia</th>
+              <th>Descrição</th>
+              <th>Minutos</th>
+              <th>Kcal</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((e) => (
+              <tr key={e.id}>
+                <td data-label="Dia">{e.data}</td>
+                <td data-label="Descrição">{e.descricao || '-'}</td>
+                <td data-label="Minutos">{e.minutos}</td>
+                <td data-label="Kcal">{e.kcal_gasta}</td>
+                <td>
+                  <button className="link-button" onClick={() => handleDelete(e.id)}>
+                    remover
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {entries.map((e) => (
-                <tr key={e.id}>
-                  <td data-label="Dia">{e.data}</td>
-                  <td data-label="Descrição">{e.descricao || '-'}</td>
-                  <td data-label="Minutos">{e.minutos}</td>
-                  <td data-label="Kcal">{e.kcal_gasta}</td>
-                  <td>
-                    <button className="link-button" onClick={() => handleDelete(e.id)}>
-                      remover
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }

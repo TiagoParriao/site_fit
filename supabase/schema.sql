@@ -61,9 +61,12 @@ create table if not exists public.groups (
   id uuid primary key default gen_random_uuid(),
   nome text not null,
   invite_code text not null unique,
+  kcal_titulo text not null default 'Histórico de calorias',
   created_by uuid not null references public.profiles (id) on delete cascade,
   created_at timestamptz not null default now()
 );
+
+alter table public.groups add column if not exists kcal_titulo text not null default 'Histórico de calorias';
 
 create table if not exists public.group_members (
   group_id uuid not null references public.groups (id) on delete cascade,
@@ -184,6 +187,15 @@ create policy "main_goals_delete_self" on public.main_goals
 -- groups: apenas membros podem ver o grupo (criação e entrada acontecem via RPCs abaixo)
 create policy "groups_select_member" on public.groups
   for select using (
+    exists (
+      select 1 from public.group_members gm
+      where gm.group_id = groups.id and gm.user_id = auth.uid()
+    )
+  );
+
+-- qualquer membro do grupo pode editar (usado para o título do painel de kcal)
+create policy "groups_update_member" on public.groups
+  for update using (
     exists (
       select 1 from public.group_members gm
       where gm.group_id = groups.id and gm.user_id = auth.uid()
