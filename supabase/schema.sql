@@ -257,3 +257,73 @@ begin
   return v_group;
 end;
 $$;
+
+-- ============ MIGRAÇÃO: desafio de grupo, medidas corporais, cor personalizada ============
+-- Rode este bloco inteiro no SQL Editor do Supabase (idempotente, pode rodar de novo sem problema).
+
+-- cor personalizada por pessoa (hex, ex: #ff6b6b); se nula, usa a cor automática por hash do id
+alter table public.profiles add column if not exists cor text;
+
+-- desafio agora é do grupo (não mais individual): tem data de início e fim explícitas
+alter table public.main_goals add column if not exists group_id uuid references public.groups (id) on delete cascade;
+alter table public.main_goals add column if not exists data_fim date;
+alter table public.main_goals alter column dias_totais drop not null;
+
+create index if not exists main_goals_group_idx on public.main_goals (group_id);
+
+create or replace function public.is_group_member(target_group uuid)
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (
+    select 1 from public.group_members gm
+    where gm.group_id = target_group and gm.user_id = auth.uid()
+  );
+$$;
+
+drop policy if exists "main_goals_select_self_or_group" on public.main_goals;
+drop policy if exists "main_goals_insert_self" on public.main_goals;
+drop policy if exists "main_goals_update_self" on public.main_goals;
+drop policy if exists "main_goals_delete_self" on public.main_goals;
+drop policy if exists "main_goals_select_group_member" on public.main_goals;
+drop policy if exists "main_goals_insert_group_member" on public.main_goals;
+
+create policy "main_goals_select_group_member" on public.main_goals
+  for select using (public.is_group_member(group_id));
+
+create policy "main_goals_insert_group_member" on public.main_goals
+  for insert with check (user_id = auth.uid() and public.is_group_member(group_id));
+
+-- medidas corporais: nome livre + valor em cm, um registro por (pessoa, medida, data)
+create table if not exists public.measurement_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  nome text not null,
+  valor_cm numeric not null,
+  data date not null default current_date,
+  created_at timestamptz not null default now(),
+  unique (user_id, nome, data)
+);
+
+create index if not exists measurement_logs_user_idx on public.measurement_logs (user_id, nome, data);
+
+alter table public.measurement_logs enable row level security;
+
+drop policy if exists "measurement_logs_select_self_or_group" on public.measurement_logs;
+drop policy if exists "measurement_logs_insert_self" on public.measurement_logs;
+drop policy if exists "measurement_logs_update_self" on public.measurement_logs;
+drop policy if exists "measurement_logs_delete_self" on public.measurement_logs;
+
+create policy "measurement_logs_select_self_or_group" on public.measurement_logs
+  for select using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "measurement_logs_insert_self" on public.measurement_logs
+  for insert with check (user_id = auth.uid());
+
+create policy "measurement_logs_update_self" on public.measurement_logs
+  for update using (user_id = auth.uid());
+
+create policy "measurement_logs_delete_self" on public.measurement_logs
+  for delete using (user_id = auth.uid());

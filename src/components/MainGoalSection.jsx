@@ -2,40 +2,36 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import MainGoalCard from './MainGoalCard'
-import ProgressTrail from './ProgressTrail'
-import { fetchGroupMainGoals, buildMainGoalLanes } from '../lib/mainGoalTrail'
 
-export default function MainGoalSection({ members, hasGroup }) {
+export default function MainGoalSection({ group }) {
   const { user } = useAuth()
-  const [myGoal, setMyGoal] = useState(null)
-  const [lanes, setLanes] = useState([])
+  const [challenge, setChallenge] = useState(null)
   const [error, setError] = useState('')
 
   const load = useCallback(async () => {
-    const { data: goalRow } = await supabase
+    if (!group) {
+      setChallenge(null)
+      return
+    }
+    const { data } = await supabase
       .from('main_goals')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('group_id', group.id)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
-    setMyGoal(goalRow ?? null)
-
-    if (members.length > 0) {
-      const goalsByUser = await fetchGroupMainGoals(supabase, members.map((m) => m.user_id))
-      setLanes(buildMainGoalLanes(members, goalsByUser))
-    } else {
-      setLanes([])
-    }
-  }, [user.id, members])
+    setChallenge(data ?? null)
+  }, [group])
 
   useEffect(() => {
     load()
   }, [load])
 
-  async function handleSetGoal({ titulo, dias_totais }) {
+  async function handleSetChallenge({ titulo, data_inicio, data_fim }) {
     setError('')
-    const { error } = await supabase.from('main_goals').insert({ user_id: user.id, titulo, dias_totais })
+    const { error } = await supabase
+      .from('main_goals')
+      .insert({ group_id: group.id, user_id: user.id, titulo, data_inicio, data_fim })
     if (error) {
       setError(error.message)
       return
@@ -43,19 +39,19 @@ export default function MainGoalSection({ members, hasGroup }) {
     load()
   }
 
-  return (
-    <div className="grid-2">
-      <MainGoalCard goal={myGoal} onSetGoal={handleSetGoal} />
+  if (!group) {
+    return (
       <div className="card">
-        <h2>Trilha das metas do grupo</h2>
-        {error && <p className="error">{error}</p>}
-        <ProgressTrail
-          lanes={lanes}
-          emptyMessage={
-            hasGroup ? 'Ninguém do grupo definiu uma meta principal ainda.' : 'Entre em um grupo para ver a trilha de metas dos seus amigos.'
-          }
-        />
+        <h2>Desafio do grupo</h2>
+        <p className="empty-state">Entre em um grupo para criar um desafio com seus amigos.</p>
       </div>
-    </div>
+    )
+  }
+
+  return (
+    <>
+      {error && <p className="error">{error}</p>}
+      <MainGoalCard challenge={challenge} onSetChallenge={handleSetChallenge} />
+    </>
   )
 }

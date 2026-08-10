@@ -28,7 +28,7 @@ export default function KcalHistoryChart({ dates, series }) {
                 const x = groupX + si * (BAR_WIDTH + BAR_GAP)
                 const y = HEIGHT - PADDING - barHeight
                 return (
-                  <rect key={s.user_id} x={x} y={y} width={BAR_WIDTH} height={barHeight} fill={colorForUser(s.user_id)} rx={2}>
+                  <rect key={s.user_id} x={x} y={y} width={BAR_WIDTH} height={barHeight} fill={colorForUser(s.user_id, s.cor)} rx={2}>
                     <title>{`${s.nome}: ${value} kcal`}</title>
                   </rect>
                 )

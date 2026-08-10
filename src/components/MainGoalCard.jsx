@@ -1,5 +1,9 @@
 import { useState } from 'react'
 
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function diaAtual(dataInicio) {
   const inicio = new Date(`${dataInicio}T00:00:00`)
   const hoje = new Date()
@@ -8,38 +12,49 @@ function diaAtual(dataInicio) {
   return diff + 1
 }
 
-export default function MainGoalCard({ goal, onSetGoal }) {
+function diasTotais(dataInicio, dataFim) {
+  const inicio = new Date(`${dataInicio}T00:00:00`)
+  const fim = new Date(`${dataFim}T00:00:00`)
+  return Math.max(1, Math.round((fim - inicio) / (1000 * 60 * 60 * 24)) + 1)
+}
+
+export default function MainGoalCard({ challenge, onSetChallenge }) {
   const [editing, setEditing] = useState(false)
   const [titulo, setTitulo] = useState('')
-  const [diasTotais, setDiasTotais] = useState('')
+  const [dataInicio, setDataInicio] = useState(todayISO())
+  const [dataFim, setDataFim] = useState(todayISO())
 
-  const dia = goal ? Math.min(Math.max(diaAtual(goal.data_inicio), 0), goal.dias_totais) : 0
-  const concluida = goal && dia >= goal.dias_totais
-  const pct = goal ? Math.min(100, (dia / goal.dias_totais) * 100) : 0
+  const total = challenge ? diasTotais(challenge.data_inicio, challenge.data_fim) : 0
+  const dia = challenge ? Math.min(Math.max(diaAtual(challenge.data_inicio), 0), total) : 0
+  const concluido = challenge && dia >= total
+  const pct = challenge ? Math.min(100, (dia / total) * 100) : 0
 
   async function handleSubmit(e) {
     e.preventDefault()
-    await onSetGoal({ titulo, dias_totais: Number(diasTotais) })
+    await onSetChallenge({ titulo, data_inicio: dataInicio, data_fim: dataFim })
     setTitulo('')
-    setDiasTotais('')
+    setDataInicio(todayISO())
+    setDataFim(todayISO())
     setEditing(false)
   }
 
   return (
     <div className="card">
-      <h2>Meta principal</h2>
-      {goal ? (
+      <h2>Desafio do grupo</h2>
+      {challenge ? (
         <>
-          <p className="info">{goal.titulo}</p>
-          <p className="big-number">
-            {concluida ? '🎉 Concluída!' : `Dia ${dia} de ${goal.dias_totais}`}
-          </p>
+          <p className="info">{challenge.titulo}</p>
+          <p className="big-number">{concluido ? '🎉 Concluído!' : `Dia ${dia} de ${total}`}</p>
           <div className="calorie-progress-track">
             <div className="calorie-progress-fill" style={{ width: `${pct}%` }} />
           </div>
+          <p className="calorie-progress-label">
+            {new Date(`${challenge.data_inicio}T00:00:00`).toLocaleDateString('pt-BR')} até{' '}
+            {new Date(`${challenge.data_fim}T00:00:00`).toLocaleDateString('pt-BR')}
+          </p>
         </>
       ) : (
-        <p className="empty-state">Nenhuma meta definida ainda.</p>
+        <p className="empty-state">Nenhum desafio definido ainda.</p>
       )}
 
       {editing ? (
@@ -48,10 +63,16 @@ export default function MainGoalCard({ goal, onSetGoal }) {
             Título
             <input value={titulo} onChange={(e) => setTitulo(e.target.value)} placeholder="Ex: 21 dias sem açúcar" required />
           </label>
-          <label>
-            Dias totais
-            <input type="number" value={diasTotais} onChange={(e) => setDiasTotais(e.target.value)} required />
-          </label>
+          <div className="grid-2">
+            <label>
+              Data de início
+              <input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} required />
+            </label>
+            <label>
+              Data final
+              <input type="date" value={dataFim} min={dataInicio} onChange={(e) => setDataFim(e.target.value)} required />
+            </label>
+          </div>
           <div className="form-actions">
             <button type="submit">Salvar</button>
             <button type="button" className="link-button" onClick={() => setEditing(false)}>
@@ -61,7 +82,7 @@ export default function MainGoalCard({ goal, onSetGoal }) {
         </form>
       ) : (
         <button className="link-button" onClick={() => setEditing(true)}>
-          {goal ? 'Definir nova meta' : 'Definir meta'}
+          {challenge ? 'Definir novo desafio' : 'Definir desafio'}
         </button>
       )}
     </div>

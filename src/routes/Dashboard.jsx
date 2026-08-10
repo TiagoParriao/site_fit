@@ -29,13 +29,14 @@ export default function Dashboard() {
     if (activeGroup) {
       const { data: groupMembers } = await supabase
         .from('group_members')
-        .select('user_id, profiles(nome, meta_kcal_diaria)')
+        .select('user_id, profiles(nome, meta_kcal_diaria, cor)')
         .eq('group_id', activeGroup.id)
 
       const flatMembers = (groupMembers ?? []).map((m) => ({
         user_id: m.user_id,
         nome: m.profiles?.nome ?? 'Membro',
         meta_kcal_diaria: m.profiles?.meta_kcal_diaria ?? 2000,
+        cor: m.profiles?.cor ?? null,
       }))
       setMembers(flatMembers)
     } else {
@@ -62,7 +63,7 @@ export default function Dashboard() {
         </p>
       )}
 
-      <MainGoalSection members={members} hasGroup={!!group} />
+      <MainGoalSection group={group} />
 
       {group && <KcalHistoryPanel group={group} members={members} />}
 

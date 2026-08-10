@@ -1,9 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { colorForUser } from '../lib/avatarColor'
 
 export default function Group() {
-  const { user } = useAuth()
+  const { user, updateProfile } = useAuth()
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -25,7 +26,7 @@ export default function Group() {
       groupList.map(async (g) => {
         const { data: members } = await supabase
           .from('group_members')
-          .select('user_id, profiles(nome)')
+          .select('user_id, profiles(nome, cor)')
           .eq('group_id', g.id)
         return { ...g, members: members ?? [] }
       })
@@ -51,6 +52,20 @@ export default function Group() {
     setNovoNome('')
     setInfo('Grupo criado!')
     load()
+  }
+
+  async function handleColorChange(cor) {
+    try {
+      await updateProfile({ cor })
+      setGroups((prev) =>
+        prev.map((g) => ({
+          ...g,
+          members: g.members.map((m) => (m.user_id === user.id ? { ...m, profiles: { ...m.profiles, cor } } : m)),
+        }))
+      )
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   async function handleJoin(e) {
@@ -111,7 +126,23 @@ export default function Group() {
             </p>
             <ul className="member-list">
               {g.members.map((m) => (
-                <li key={m.user_id}>{m.profiles?.nome ?? 'Membro'}</li>
+                <li key={m.user_id} className="member-color-row">
+                  <span>{m.profiles?.nome ?? 'Membro'}</span>
+                  {m.user_id === user.id ? (
+                    <input
+                      type="color"
+                      className="color-input"
+                      value={colorForUser(m.user_id, m.profiles?.cor)}
+                      onChange={(e) => handleColorChange(e.target.value)}
+                      title="Escolha sua cor"
+                    />
+                  ) : (
+                    <span
+                      className="color-swatch"
+                      style={{ background: colorForUser(m.user_id, m.profiles?.cor) }}
+                    />
+                  )}
+                </li>
               ))}
             </ul>
           </div>

@@ -92,8 +92,8 @@ export default function KcalHistoryPanel({ group, members }) {
           <div className="chart-legend">
             {result.rows.map((r) => (
               <span key={r.user_id}>
-                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id) }} />
-                {r.nome} — {r.totalPeriodo} kcal
+                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
+                {r.nome} — consumiu {r.totalPeriodo} kcal / gastou {r.totalGastoPeriodo} kcal
               </span>
             ))}
           </div>
@@ -103,6 +103,8 @@ export default function KcalHistoryPanel({ group, members }) {
               <tr>
                 <th>Membro</th>
                 <th>Meta diária</th>
+                <th>Kcal consumidas</th>
+                <th>Kcal gastas</th>
                 <th>Dias registrados</th>
                 <th>Dias acima da meta</th>
               </tr>
@@ -112,6 +114,8 @@ export default function KcalHistoryPanel({ group, members }) {
                 <tr key={r.user_id}>
                   <td data-label="Membro">{r.nome}</td>
                   <td data-label="Meta diária">{r.meta} kcal</td>
+                  <td data-label="Kcal consumidas">{r.totalPeriodo} kcal</td>
+                  <td data-label="Kcal gastas">{r.totalGastoPeriodo} kcal</td>
                   <td data-label="Dias registrados">{r.diasRegistrados}</td>
                   <td data-label="Dias acima da meta">{r.diasEstourados}</td>
                 </tr>

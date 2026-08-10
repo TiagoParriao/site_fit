@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import WeightHistoryChart from '../components/WeightHistoryChart'
+import MeasurementsSection from '../components/MeasurementsSection'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -133,6 +134,8 @@ export default function Weight() {
           </tbody>
         </table>
       </div>
+
+      <MeasurementsSection />
     </div>
   )
 }
