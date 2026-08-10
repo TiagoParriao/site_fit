@@ -20,6 +20,10 @@ export default function MeasurementsSection() {
 
   const [selectedNome, setSelectedNome] = useState('')
 
+  const [editingId, setEditingId] = useState(null)
+  const [editValor, setEditValor] = useState('')
+  const [editData, setEditData] = useState('')
+
   const load = useCallback(async () => {
     setLoading(true)
     const rows = await fetchMeasurements(supabase, user.id)
@@ -59,6 +63,26 @@ export default function MeasurementsSection() {
 
   async function handleDelete(id) {
     await supabase.from('measurement_logs').delete().eq('id', id)
+    load()
+  }
+
+  function startEdit(log) {
+    setEditingId(log.id)
+    setEditValor(String(log.valor_cm))
+    setEditData(log.data)
+  }
+
+  async function handleSaveEdit(id) {
+    setError('')
+    const { error } = await supabase
+      .from('measurement_logs')
+      .update({ valor_cm: Number(editValor), data: editData })
+      .eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setEditingId(null)
     load()
   }
 
@@ -134,18 +158,52 @@ export default function MeasurementsSection() {
               {historico
                 .slice()
                 .reverse()
-                .map((log) => (
-                  <tr key={log.id}>
-                    <td data-label="Data">{new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}</td>
-                    <td data-label="Medida">{log.nome}</td>
-                    <td data-label="Tamanho">{log.valor_cm}cm</td>
-                    <td>
-                      <button className="link-button" onClick={() => handleDelete(log.id)}>
-                        remover
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                .map((log) =>
+                  editingId === log.id ? (
+                    <tr key={log.id}>
+                      <td colSpan={4}>
+                        <div className="inline-edit-row">
+                          <label>
+                            Data
+                            <input type="date" value={editData} onChange={(e) => setEditData(e.target.value)} required />
+                          </label>
+                          <label>
+                            Tamanho (cm)
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={editValor}
+                              onChange={(e) => setEditValor(e.target.value)}
+                              required
+                            />
+                          </label>
+                          <button type="button" onClick={() => handleSaveEdit(log.id)}>
+                            Salvar
+                          </button>
+                          <button type="button" className="link-button" onClick={() => setEditingId(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={log.id}>
+                      <td data-label="Data">{new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}</td>
+                      <td data-label="Medida">{log.nome}</td>
+                      <td data-label="Tamanho">{log.valor_cm}cm</td>
+                      <td>
+                        <span className="row-actions">
+                          <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
+                            ✏️
+                          </button>
+                          <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
+                            🗑️
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                )}
             </tbody>
           </table>
         </>

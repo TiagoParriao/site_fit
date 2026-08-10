@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import WeightHistoryChart from '../components/WeightHistoryChart'
@@ -19,6 +19,10 @@ export default function Weight() {
   const [novaData, setNovaData] = useState(todayISO())
   const [metaPeso, setMetaPeso] = useState('')
   const [metaData, setMetaData] = useState('')
+
+  const [editingId, setEditingId] = useState(null)
+  const [editPeso, setEditPeso] = useState('')
+  const [editData, setEditData] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -70,6 +74,40 @@ export default function Weight() {
     load()
   }
 
+  async function handleDelete(id) {
+    await supabase.from('weight_logs').delete().eq('id', id)
+    load()
+  }
+
+  function startEdit(log) {
+    setEditingId(log.id)
+    setEditPeso(String(log.peso_kg))
+    setEditData(log.data)
+  }
+
+  async function handleSaveEdit(id) {
+    setError('')
+    const { error } = await supabase
+      .from('weight_logs')
+      .update({ peso_kg: Number(editPeso), data: editData })
+      .eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setEditingId(null)
+    load()
+  }
+
+  const diff = useMemo(() => {
+    if (logs.length < 2) return null
+    const sorted = [...logs].sort((a, b) => new Date(a.data) - new Date(b.data))
+    const primeiro = sorted[0]
+    const ultimo = sorted[sorted.length - 1]
+    const delta = ultimo.peso_kg - primeiro.peso_kg
+    return { delta, desde: primeiro.data }
+  }, [logs])
+
   if (loading) return <div className="page-loading">Carregando...</div>
 
   return (
@@ -79,6 +117,12 @@ export default function Weight() {
 
       <div className="card">
         <h2>Histórico</h2>
+        {diff && (
+          <p className={`weight-diff${diff.delta > 0 ? ' up' : ''}`}>
+            {diff.delta > 0 ? '+' : ''}
+            {diff.delta.toFixed(1)}kg desde {new Date(`${diff.desde}T00:00:00`).toLocaleDateString('pt-BR')}
+          </p>
+        )}
         <WeightHistoryChart logs={logs} goalKg={goal?.peso_meta_kg} />
       </div>
 
@@ -122,15 +166,55 @@ export default function Weight() {
             <tr>
               <th>Data</th>
               <th>Peso</th>
+              <th></th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
-              <tr key={log.id}>
-                <td data-label="Data">{new Date(log.data).toLocaleDateString('pt-BR')}</td>
-                <td data-label="Peso">{log.peso_kg}kg</td>
-              </tr>
-            ))}
+            {logs.map((log) =>
+              editingId === log.id ? (
+                <tr key={log.id}>
+                  <td colSpan={3}>
+                    <div className="inline-edit-row">
+                      <label>
+                        Data
+                        <input type="date" value={editData} onChange={(e) => setEditData(e.target.value)} required />
+                      </label>
+                      <label>
+                        Peso (kg)
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={editPeso}
+                          onChange={(e) => setEditPeso(e.target.value)}
+                          required
+                        />
+                      </label>
+                      <button type="button" onClick={() => handleSaveEdit(log.id)}>
+                        Salvar
+                      </button>
+                      <button type="button" className="link-button" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={log.id}>
+                  <td data-label="Data">{new Date(log.data).toLocaleDateString('pt-BR')}</td>
+                  <td data-label="Peso">{log.peso_kg}kg</td>
+                  <td>
+                    <span className="row-actions">
+                      <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
+                        ✏️
+                      </button>
+                      <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
+                        🗑️
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       </div>

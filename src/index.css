@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   --bg: #f5f6fb;
   --surface: #ffffff;
   --text: #2b2d42;
@@ -582,15 +583,6 @@ button:disabled {
   margin-right: 4px;
 }
 
-.chart-legend-swatch.bar {
-  background: rgba(108, 92, 231, 0.35);
-}
-
-.chart-legend-swatch.line {
-  background: var(--primary);
-  border-radius: 50%;
-}
-
 /* Over-budget history */
 
 .overbudget-list {
@@ -607,4 +599,160 @@ button:disabled {
   justify-content: space-between;
   font-size: 14px;
   color: var(--text-muted);
+}
+
+/* Row action icons (editar/remover) */
+
+.row-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.icon-button:hover {
+  opacity: 0.6;
+}
+
+.inline-edit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.inline-edit-row label {
+  flex: 1;
+  min-width: 80px;
+}
+
+.inline-edit-row input {
+  width: 100%;
+}
+
+/* Saldo de kcal */
+
+.kcal-saldo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.kcal-saldo.negative {
+  color: var(--danger);
+}
+
+/* Copiar refeição de ontem */
+
+.copy-yesterday {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.copy-yesterday-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.copy-yesterday-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.copy-yesterday-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+
+.copy-yesterday-item button {
+  padding: 2px 8px;
+  font-size: 12px;
+  border-radius: 999px;
+}
+
+/* Weight diff badge */
+
+.weight-diff {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--success);
+}
+
+.weight-diff.up {
+  color: var(--danger);
+}
+
+/* Challenge history */
+
+.challenge-history-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.challenge-history-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.challenge-history-status {
+  font-weight: 600;
+}
+
+/* Chart axes (Y gridlines + labels) */
+
+.chart-axis-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.chart-axis-label {
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+
+.chart-bar-value {
+  font-size: 8px;
+  fill: var(--text-muted);
+}
+
+.chart-x-weekday {
+  font-size: 10px;
+  font-weight: 700;
+  fill: var(--text);
+}
+
+.chart-x-sublabel {
+  font-size: 8px;
+  fill: var(--text-muted);
 }

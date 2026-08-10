@@ -26,6 +26,12 @@ export default function ExerciseSection() {
   const [chartEnd, setChartEnd] = useState(todayISO())
   const [chartData, setChartData] = useState({ days: [] })
 
+  const [editingId, setEditingId] = useState(null)
+  const [editData, setEditData] = useState('')
+  const [editMinutos, setEditMinutos] = useState('')
+  const [editKcalGasta, setEditKcalGasta] = useState('')
+  const [editDescricao, setEditDescricao] = useState('')
+
   const load = useCallback(async () => {
     setLoading(true)
     const { data: rows } = await supabase
@@ -79,6 +85,29 @@ export default function ExerciseSection() {
 
   async function handleDelete(id) {
     await supabase.from('exercise_logs').delete().eq('id', id)
+    load()
+    loadChart()
+  }
+
+  function startEdit(entry) {
+    setEditingId(entry.id)
+    setEditData(entry.data)
+    setEditMinutos(String(entry.minutos))
+    setEditKcalGasta(String(entry.kcal_gasta))
+    setEditDescricao(entry.descricao || '')
+  }
+
+  async function handleSaveEdit(id) {
+    setError('')
+    const { error } = await supabase
+      .from('exercise_logs')
+      .update({ data: editData, minutos: Number(editMinutos), kcal_gasta: Number(editKcalGasta), descricao: editDescricao })
+      .eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setEditingId(null)
     load()
     loadChart()
   }
@@ -138,19 +167,60 @@ export default function ExerciseSection() {
             </tr>
           </thead>
           <tbody>
-            {entries.map((e) => (
-              <tr key={e.id}>
-                <td data-label="Dia">{e.data}</td>
-                <td data-label="Descrição">{e.descricao || '-'}</td>
-                <td data-label="Minutos">{e.minutos}</td>
-                <td data-label="Kcal">{e.kcal_gasta}</td>
-                <td>
-                  <button className="link-button" onClick={() => handleDelete(e.id)}>
-                    remover
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {entries.map((e) =>
+              editingId === e.id ? (
+                <tr key={e.id}>
+                  <td colSpan={5}>
+                    <div className="inline-edit-row">
+                      <label>
+                        Dia
+                        <input type="date" value={editData} onChange={(ev) => setEditData(ev.target.value)} required />
+                      </label>
+                      <label>
+                        Descrição
+                        <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
+                      </label>
+                      <label>
+                        Minutos
+                        <input type="number" value={editMinutos} onChange={(ev) => setEditMinutos(ev.target.value)} required />
+                      </label>
+                      <label>
+                        Kcal
+                        <input
+                          type="number"
+                          value={editKcalGasta}
+                          onChange={(ev) => setEditKcalGasta(ev.target.value)}
+                          required
+                        />
+                      </label>
+                      <button type="button" onClick={() => handleSaveEdit(e.id)}>
+                        Salvar
+                      </button>
+                      <button type="button" className="link-button" onClick={() => setEditingId(null)}>
+                        Cancelar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                <tr key={e.id}>
+                  <td data-label="Dia">{e.data}</td>
+                  <td data-label="Descrição">{e.descricao || '-'}</td>
+                  <td data-label="Minutos">{e.minutos}</td>
+                  <td data-label="Kcal">{e.kcal_gasta}</td>
+                  <td>
+                    <span className="row-actions">
+                      <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
+                        ✏️
+                      </button>
+                      <button className="icon-button" title="remover" onClick={() => handleDelete(e.id)}>
+                        🗑️
+                      </button>
+                    </span>
+                  </td>
+                </tr>
+              )
+            )}
           </tbody>
         </table>
       )}
