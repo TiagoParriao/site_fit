@@ -3,11 +3,12 @@ import { resolvePeriodRange } from './periods'
 export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
   const { start, end } = resolvePeriodRange(preset, opts)
   const userIds = members.map((m) => m.user_id)
-  if (userIds.length === 0) return { start, end, rows: [], chartDates: [], chartSeries: [] }
+  if (userIds.length === 0)
+    return { start, end, rows: [], chartDates: [], chartSeries: [], chartDatesGasto: [], chartSeriesGasto: [] }
 
   const [{ data }, { data: exerciseData }] = await Promise.all([
     supabase.from('calorie_logs').select('user_id, data, kcal').in('user_id', userIds).gte('data', start).lte('data', end),
-    supabase.from('exercise_logs').select('user_id, kcal_gasta').in('user_id', userIds).gte('data', start).lte('data', end),
+    supabase.from('exercise_logs').select('user_id, data, kcal_gasta').in('user_id', userIds).gte('data', start).lte('data', end),
   ])
 
   const totals = {}
@@ -19,8 +20,13 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
   }
 
   const gastoTotals = {}
+  const gastoDayTotals = {}
+  const gastoDatesSet = new Set()
   for (const row of exerciseData ?? []) {
     gastoTotals[row.user_id] = (gastoTotals[row.user_id] ?? 0) + row.kcal_gasta
+    gastoDayTotals[row.user_id] ??= {}
+    gastoDayTotals[row.user_id][row.data] = (gastoDayTotals[row.user_id][row.data] ?? 0) + row.kcal_gasta
+    gastoDatesSet.add(row.data)
   }
 
   const rows = members.map((m) => {
@@ -51,5 +57,13 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
     values: chartDates.map((d) => totals[m.user_id]?.[d] ?? 0),
   }))
 
-  return { start, end, rows, chartDates, chartSeries }
+  const chartDatesGasto = [...gastoDatesSet].sort()
+  const chartSeriesGasto = members.map((m) => ({
+    user_id: m.user_id,
+    nome: m.nome,
+    cor: m.cor,
+    values: chartDatesGasto.map((d) => gastoDayTotals[m.user_id]?.[d] ?? 0),
+  }))
+
+  return { start, end, rows, chartDates, chartSeries, chartDatesGasto, chartSeriesGasto }
 }

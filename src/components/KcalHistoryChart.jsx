@@ -11,9 +11,9 @@ const BAR_GAP = 4
 const BAR_WIDTH = 14
 const STEP = 200
 
-export default function KcalHistoryChart({ dates, series }) {
+export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem registros de calorias nesse período.' }) {
   if (!dates || dates.length === 0 || !series || series.length === 0) {
-    return <p className="empty-state">Sem registros de calorias nesse período.</p>
+    return <p className="empty-state">{emptyMessage}</p>
   }
 
   const maxKcal = Math.max(...series.flatMap((s) => s.values), 1)

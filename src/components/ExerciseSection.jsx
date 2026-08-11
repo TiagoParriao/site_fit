@@ -24,7 +24,7 @@ export default function ExerciseSection() {
   const [chartDate, setChartDate] = useState(todayISO())
   const [chartStart, setChartStart] = useState(todayISO())
   const [chartEnd, setChartEnd] = useState(todayISO())
-  const [chartData, setChartData] = useState({ days: [] })
+  const [chartData, setChartData] = useState({ days: [], totalSessoes: 0, mediaMinutos: 0, mediaKcalGasta: 0 })
 
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState('')
@@ -128,6 +128,13 @@ export default function ExerciseSection() {
         onEndChange={setChartEnd}
       />
       <ExerciseChart days={chartData.days} />
+      {chartData.totalSessoes > 0 && (
+        <div className="chart-legend">
+          <span>{chartData.totalSessoes} sessões</span>
+          <span>Tempo médio: {chartData.mediaMinutos} min</span>
+          <span>Kcal média: {chartData.mediaKcalGasta} kcal</span>
+        </div>
+      )}
 
       <form className="stacked-form" onSubmit={handleAdd}>
         <div className="grid-3">

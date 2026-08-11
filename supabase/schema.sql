@@ -327,3 +327,9 @@ create policy "measurement_logs_update_self" on public.measurement_logs
 
 create policy "measurement_logs_delete_self" on public.measurement_logs
   for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: tipo de refeição em calorie_logs ============
+-- Usado para calcular a média de kcal consumidas por tipo de refeição
+-- (café da manhã, almoço, lanche, janta, ceia, outro).
+
+alter table public.calorie_logs add column if not exists tipo_refeicao text;

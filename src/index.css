@@ -37,6 +37,13 @@ h2 {
   font-size: 18px;
 }
 
+h3 {
+  margin: 4px 0 2px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
 a {
   color: var(--primary);
 }
@@ -256,6 +263,20 @@ input {
 }
 
 input:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+select {
+  font: inherit;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  color: var(--text);
+  background: var(--surface);
+}
+
+select:focus {
   outline: 2px solid var(--primary);
   outline-offset: 1px;
 }

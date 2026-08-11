@@ -2,6 +2,9 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import CalorieProgressBar from './CalorieProgressBar'
+import PeriodSelector from './PeriodSelector'
+import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
+import { fetchMealTypeAverages } from '../lib/mealAverages'
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10)
@@ -28,6 +31,7 @@ export default function CaloriesSection() {
   const [kcal, setKcal] = useState('')
   const [descricao, setDescricao] = useState('')
   const [hora, setHora] = useState(nowHHMM())
+  const [tipoRefeicao, setTipoRefeicao] = useState(suggestMealType(nowHHMM()))
 
   const [editingMeta, setEditingMeta] = useState(false)
   const [novaMeta, setNovaMeta] = useState('')
@@ -36,6 +40,13 @@ export default function CaloriesSection() {
   const [editKcal, setEditKcal] = useState('')
   const [editDescricao, setEditDescricao] = useState('')
   const [editHora, setEditHora] = useState('')
+  const [editTipoRefeicao, setEditTipoRefeicao] = useState('outro')
+
+  const [mealPreset, setMealPreset] = useState('semana')
+  const [mealDate, setMealDate] = useState(todayISO())
+  const [mealStart, setMealStart] = useState(todayISO())
+  const [mealEnd, setMealEnd] = useState(todayISO())
+  const [mealAverages, setMealAverages] = useState({ rows: [] })
 
   const isToday = data === todayISO()
 
@@ -73,6 +84,19 @@ export default function CaloriesSection() {
     loadYesterday()
   }, [loadYesterday])
 
+  const loadMealAverages = useCallback(async () => {
+    const result = await fetchMealTypeAverages(supabase, user.id, mealPreset, {
+      date: mealDate,
+      start: mealStart,
+      end: mealEnd,
+    })
+    setMealAverages(result)
+  }, [user.id, mealPreset, mealDate, mealStart, mealEnd])
+
+  useEffect(() => {
+    loadMealAverages()
+  }, [loadMealAverages])
+
   async function handleUpdateMeta(e) {
     e.preventDefault()
     setError('')
@@ -94,6 +118,7 @@ export default function CaloriesSection() {
       descricao,
       data,
       hora,
+      tipo_refeicao: tipoRefeicao,
     })
     if (error) {
       setError(error.message)
@@ -102,12 +127,15 @@ export default function CaloriesSection() {
     setKcal('')
     setDescricao('')
     setHora(nowHHMM())
+    setTipoRefeicao(suggestMealType(nowHHMM()))
     load()
+    loadMealAverages()
   }
 
   async function handleDelete(id) {
     await supabase.from('calorie_logs').delete().eq('id', id)
     load()
+    loadMealAverages()
   }
 
   function startEdit(entry) {
@@ -115,13 +143,14 @@ export default function CaloriesSection() {
     setEditKcal(String(entry.kcal))
     setEditDescricao(entry.descricao || '')
     setEditHora(entry.hora?.slice(0, 5) || nowHHMM())
+    setEditTipoRefeicao(entry.tipo_refeicao || 'outro')
   }
 
   async function handleSaveEdit(id) {
     setError('')
     const { error } = await supabase
       .from('calorie_logs')
-      .update({ kcal: Number(editKcal), descricao: editDescricao, hora: editHora })
+      .update({ kcal: Number(editKcal), descricao: editDescricao, hora: editHora, tipo_refeicao: editTipoRefeicao })
       .eq('id', id)
     if (error) {
       setError(error.message)
@@ -129,6 +158,7 @@ export default function CaloriesSection() {
     }
     setEditingId(null)
     load()
+    loadMealAverages()
   }
 
   async function handleCopyFromYesterday(entry) {
@@ -139,12 +169,14 @@ export default function CaloriesSection() {
       descricao: entry.descricao,
       data,
       hora: nowHHMM(),
+      tipo_refeicao: entry.tipo_refeicao,
     })
     if (error) {
       setError(error.message)
       return
     }
     load()
+    loadMealAverages()
   }
 
   const total = entries.reduce((sum, e) => sum + e.kcal, 0)
@@ -205,6 +237,16 @@ export default function CaloriesSection() {
             <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} required />
           </label>
         </div>
+        <label>
+          Tipo de refeição
+          <select value={tipoRefeicao} onChange={(e) => setTipoRefeicao(e.target.value)}>
+            {MEAL_TYPES.map((t) => (
+              <option key={t.key} value={t.key}>
+                {t.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <button type="submit">Adicionar refeição</button>
       </form>
 
@@ -234,6 +276,7 @@ export default function CaloriesSection() {
             <tr>
               <th>Hora</th>
               <th>Descrição</th>
+              <th>Refeição</th>
               <th>Kcal</th>
               <th></th>
             </tr>
@@ -242,7 +285,7 @@ export default function CaloriesSection() {
             {entries.map((e) =>
               editingId === e.id ? (
                 <tr key={e.id}>
-                  <td colSpan={4}>
+                  <td colSpan={5}>
                     <div className="inline-edit-row">
                       <label>
                         Hora
@@ -251,6 +294,16 @@ export default function CaloriesSection() {
                       <label>
                         Descrição
                         <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
+                      </label>
+                      <label>
+                        Refeição
+                        <select value={editTipoRefeicao} onChange={(ev) => setEditTipoRefeicao(ev.target.value)}>
+                          {MEAL_TYPES.map((t) => (
+                            <option key={t.key} value={t.key}>
+                              {t.label}
+                            </option>
+                          ))}
+                        </select>
                       </label>
                       <label>
                         Kcal
@@ -269,6 +322,7 @@ export default function CaloriesSection() {
                 <tr key={e.id}>
                   <td data-label="Hora">{e.hora?.slice(0, 5)}</td>
                   <td data-label="Descrição">{e.descricao || '-'}</td>
+                  <td data-label="Refeição">{mealTypeLabel(e.tipo_refeicao)}</td>
                   <td data-label="Kcal">{e.kcal}</td>
                   <td>
                     <span className="row-actions">
@@ -283,6 +337,40 @@ export default function CaloriesSection() {
                 </tr>
               )
             )}
+          </tbody>
+        </table>
+      )}
+
+      <h3>Média por refeição</h3>
+      <PeriodSelector
+        preset={mealPreset}
+        onPresetChange={setMealPreset}
+        date={mealDate}
+        onDateChange={setMealDate}
+        start={mealStart}
+        onStartChange={setMealStart}
+        end={mealEnd}
+        onEndChange={setMealEnd}
+      />
+      {mealAverages.rows.length === 0 ? (
+        <p className="empty-state">Sem registros suficientes nesse período.</p>
+      ) : (
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Refeição</th>
+              <th>Média</th>
+              <th>Registros</th>
+            </tr>
+          </thead>
+          <tbody>
+            {mealAverages.rows.map((r) => (
+              <tr key={r.key}>
+                <td data-label="Refeição">{r.label}</td>
+                <td data-label="Média">{r.media} kcal</td>
+                <td data-label="Registros">{r.registros}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
       )}

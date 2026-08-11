@@ -137,6 +137,21 @@ export default function KcalHistoryPanel({ group, members }) {
               )}
             </ul>
           )}
+
+          <h3>Kcal gastas em exercício</h3>
+          <KcalHistoryChart
+            dates={result.chartDatesGasto}
+            series={result.chartSeriesGasto}
+            emptyMessage="Sem exercícios registrados nesse período."
+          />
+          <div className="chart-legend">
+            {result.rows.map((r) => (
+              <span key={r.user_id}>
+                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
+                {r.nome} — {r.totalGastoPeriodo} kcal gastas
+              </span>
+            ))}
+          </div>
         </>
       )}
     </div>
