@@ -223,14 +223,10 @@ export default function CaloriesSection() {
       )}
 
       <form className="stacked-form" onSubmit={handleAdd}>
-        <div className="grid-3">
+        <div className="grid-2">
           <label>
             Kcal
             <input type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} required />
-          </label>
-          <label>
-            Descrição
-            <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: almoço" />
           </label>
           <label>
             Hora
@@ -246,6 +242,10 @@ export default function CaloriesSection() {
               </option>
             ))}
           </select>
+        </label>
+        <label>
+          Descrição (opcional)
+          <input value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: com batata doce" />
         </label>
         <button type="submit">Adicionar refeição</button>
       </form>
@@ -275,9 +275,9 @@ export default function CaloriesSection() {
           <thead>
             <tr>
               <th>Hora</th>
-              <th>Descrição</th>
               <th>Refeição</th>
               <th>Kcal</th>
+              <th>Descrição</th>
               <th></th>
             </tr>
           </thead>
@@ -290,10 +290,6 @@ export default function CaloriesSection() {
                       <label>
                         Hora
                         <input type="time" value={editHora} onChange={(ev) => setEditHora(ev.target.value)} required />
-                      </label>
-                      <label>
-                        Descrição
-                        <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
                       </label>
                       <label>
                         Refeição
@@ -309,6 +305,10 @@ export default function CaloriesSection() {
                         Kcal
                         <input type="number" value={editKcal} onChange={(ev) => setEditKcal(ev.target.value)} required />
                       </label>
+                      <label>
+                        Descrição (opcional)
+                        <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
+                      </label>
                       <button type="button" onClick={() => handleSaveEdit(e.id)}>
                         Salvar
                       </button>
@@ -321,9 +321,9 @@ export default function CaloriesSection() {
               ) : (
                 <tr key={e.id}>
                   <td data-label="Hora">{e.hora?.slice(0, 5)}</td>
-                  <td data-label="Descrição">{e.descricao || '-'}</td>
                   <td data-label="Refeição">{mealTypeLabel(e.tipo_refeicao)}</td>
                   <td data-label="Kcal">{e.kcal}</td>
+                  <td data-label="Descrição">{e.descricao || '-'}</td>
                   <td>
                     <span className="row-actions">
                       <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
