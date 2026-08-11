@@ -12,6 +12,7 @@ export default function NavBar() {
           Trilha
         </NavLink>
         <NavLink to="/peso">Peso</NavLink>
+        <NavLink to="/financas">Finanças</NavLink>
         <NavLink to="/grupo">Grupo</NavLink>
       </div>
       <div className="navbar-user">

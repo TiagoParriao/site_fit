@@ -6,6 +6,7 @@ import Login from './routes/Login'
 import Signup from './routes/Signup'
 import Dashboard from './routes/Dashboard'
 import Weight from './routes/Weight'
+import Financas from './routes/Financas'
 import Group from './routes/Group'
 
 function AppLayout({ children }) {
@@ -37,6 +38,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Weight />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/financas"
+          element={
+            <ProtectedRoute>
+              <Financas />
             </ProtectedRoute>
           }
         />

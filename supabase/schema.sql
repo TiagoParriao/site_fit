@@ -333,3 +333,110 @@ create policy "measurement_logs_delete_self" on public.measurement_logs
 -- (café da manhã, almoço, lanche, janta, ceia, outro).
 
 alter table public.calorie_logs add column if not exists tipo_refeicao text;
+
+-- ============ MIGRAÇÃO: Finanças pessoais ============
+-- Diferente das demais tabelas, finanças é 100% privado: o RLS de select
+-- NÃO usa shares_group_with, nem o grupo pode ver os lançamentos de ninguém.
+
+create table if not exists public.finance_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  tipo text not null check (tipo in ('receita', 'despesa')),
+  valor numeric not null check (valor > 0),
+  categoria text not null,
+  descricao text,
+  data date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists finance_logs_user_data_idx on public.finance_logs (user_id, data);
+
+create table if not exists public.finance_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  valor_meta numeric not null,
+  mes_ano date not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, mes_ano)
+);
+
+create table if not exists public.finance_balances (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  valor numeric not null default 0,
+  data date not null default current_date,
+  created_at timestamptz not null default now(),
+  unique (user_id)
+);
+
+alter table public.finance_logs enable row level security;
+alter table public.finance_goals enable row level security;
+alter table public.finance_balances enable row level security;
+
+create policy "finance_logs_select_self" on public.finance_logs
+  for select using (user_id = auth.uid());
+
+create policy "finance_logs_insert_self" on public.finance_logs
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_logs_update_self" on public.finance_logs
+  for update using (user_id = auth.uid());
+
+create policy "finance_logs_delete_self" on public.finance_logs
+  for delete using (user_id = auth.uid());
+
+create policy "finance_goals_select_self" on public.finance_goals
+  for select using (user_id = auth.uid());
+
+create policy "finance_goals_insert_self" on public.finance_goals
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_goals_update_self" on public.finance_goals
+  for update using (user_id = auth.uid());
+
+create policy "finance_goals_delete_self" on public.finance_goals
+  for delete using (user_id = auth.uid());
+
+create policy "finance_balances_select_self" on public.finance_balances
+  for select using (user_id = auth.uid());
+
+create policy "finance_balances_insert_self" on public.finance_balances
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_balances_update_self" on public.finance_balances
+  for update using (user_id = auth.uid());
+
+create policy "finance_balances_delete_self" on public.finance_balances
+  for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: Desmame do cartão de crédito ============
+-- Meio de pagamento (débito/pix/dinheiro vs. crédito) e classe do gasto
+-- (fixa vs. diário) em cada lançamento, mais renda mensal + meta de teto
+-- diário reduzido, para calcular o limite diário e projetar a fatura.
+
+alter table public.finance_logs add column if not exists forma_pagamento text check (forma_pagamento in ('debito', 'credito'));
+alter table public.finance_logs add column if not exists classe text check (classe in ('fixa', 'diario'));
+
+create table if not exists public.finance_income (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  mes_ano date not null,
+  salario numeric,
+  meta_diaria numeric,
+  created_at timestamptz not null default now(),
+  unique (user_id, mes_ano)
+);
+
+alter table public.finance_income enable row level security;
+
+create policy "finance_income_select_self" on public.finance_income
+  for select using (user_id = auth.uid());
+
+create policy "finance_income_insert_self" on public.finance_income
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_income_update_self" on public.finance_income
+  for update using (user_id = auth.uid());
+
+create policy "finance_income_delete_self" on public.finance_income
+  for delete using (user_id = auth.uid());
