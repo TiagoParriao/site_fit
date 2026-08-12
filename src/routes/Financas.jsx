@@ -14,10 +14,6 @@ function formaLabel(key) {
   return FORMAS.find((f) => f.key === key)?.label ?? key
 }
 
-function mesAtualISO() {
-  return `${todayISO().slice(0, 7)}-01`
-}
-
 export default function Financas() {
   const { user } = useAuth()
   const [logs, setLogs] = useState([])
@@ -157,7 +153,6 @@ export default function Financas() {
   }
 
   const hoje = todayISO()
-  const mesAtual = mesAtualISO()
   const saldoInicial = balance?.valor ?? 0
 
   const entradas = useMemo(() => logs.filter((l) => l.tipo === 'receita'), [logs])
@@ -176,13 +171,6 @@ export default function Financas() {
     return saldoInicial + entrou - saiu
   }, [entradas, saidasConta, saldoInicial, hoje])
 
-  const previstoFimMes = useMemo(() => {
-    const isMesFuturo = (l) => l.data > hoje && l.data.slice(0, 7) === mesAtual.slice(0, 7)
-    const entrou = entradas.filter(isMesFuturo).reduce((sum, l) => sum + Number(l.valor), 0)
-    const saiu = saidasConta.filter(isMesFuturo).reduce((sum, l) => sum + Number(l.valor), 0)
-    return saldoAtual + entrou - saiu
-  }, [entradas, saidasConta, saldoAtual, hoje, mesAtual])
-
   const itensFaturaAberta = useMemo(
     () => saidasCartao.filter((l) => !l.fatura_paga).sort((a, b) => (a.data < b.data ? 1 : -1)),
     [saidasCartao]
@@ -191,11 +179,117 @@ export default function Financas() {
   const saldoDepoisDaFatura = saldoAtual - faturaAberta
 
   const logsConta = useMemo(
-    () => [...entradas, ...saidasConta].sort((a, b) => (a.data < b.data ? -1 : 1)),
-    [entradas, saidasConta]
+    () =>
+      [...entradas, ...saidasConta]
+        .filter((l) => l.data <= hoje)
+        .sort((a, b) => (a.data < b.data ? -1 : 1)),
+    [entradas, saidasConta, hoje]
   )
 
-  const registros = useMemo(() => [...logs].sort((a, b) => (a.data < b.data ? 1 : -1)), [logs])
+  const logsFuturos = useMemo(
+    () => logs.filter((l) => l.data > hoje).sort((a, b) => (a.data < b.data ? -1 : 1)),
+    [logs, hoje]
+  )
+  const logsPassados = useMemo(
+    () => logs.filter((l) => l.data <= hoje).sort((a, b) => (a.data < b.data ? 1 : -1)),
+    [logs, hoje]
+  )
+
+  // Se tudo que ainda não caiu (entradas e saídas futuras na conta) caísse hoje, e a fatura
+  // em aberto fosse paga junto — sem limite de mês, pra dar pra planejar vários meses à frente.
+  const projecao = useMemo(() => {
+    const entrou = entradas.filter((l) => l.data > hoje).reduce((sum, l) => sum + Number(l.valor), 0)
+    const saiu = saidasConta.filter((l) => l.data > hoje).reduce((sum, l) => sum + Number(l.valor), 0)
+    return saldoAtual + entrou - saiu - faturaAberta
+  }, [entradas, saidasConta, saldoAtual, faturaAberta, hoje])
+
+  function renderRow(log) {
+    if (editingId === log.id) {
+      return (
+        <tr key={log.id}>
+          <td colSpan={5}>
+            <div className="inline-edit-row">
+              <label>
+                Data
+                <input type="date" value={editData} onChange={(e) => setEditData(e.target.value)} required />
+              </label>
+              <label>
+                Tipo
+                <select value={editTipo} onChange={(e) => setEditTipo(e.target.value)}>
+                  <option value="receita">Entrada</option>
+                  <option value="despesa">Saída</option>
+                </select>
+              </label>
+              <label>
+                Valor (R$)
+                <input
+                  type="number"
+                  step="0.01"
+                  value={editValor}
+                  onChange={(e) => setEditValor(e.target.value)}
+                  required
+                />
+              </label>
+              {editTipo === 'despesa' && (
+                <label>
+                  Forma
+                  <select value={editForma} onChange={(e) => setEditForma(e.target.value)}>
+                    {FORMAS.map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label>
+                Descrição (opcional)
+                <input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
+              </label>
+              <button type="button" onClick={() => handleSaveEdit(log.id)}>
+                Salvar
+              </button>
+              <button type="button" className="link-button" onClick={() => setEditingId(null)}>
+                Cancelar
+              </button>
+            </div>
+          </td>
+        </tr>
+      )
+    }
+    return (
+      <tr key={log.id}>
+        <td data-label="Data">{new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}</td>
+        <td data-label="Tipo">{log.tipo === 'receita' ? 'Entrada' : 'Saída'}</td>
+        <td data-label="Descrição">
+          {log.descricao || log.categoria || '-'}
+          {log.tipo === 'despesa' && (
+            <span className="finance-tags">
+              <span className="finance-tag">{formaLabel(log.forma_pagamento || 'debito')}</span>
+              {log.forma_pagamento === 'credito' && (
+                <span className={`finance-tag${log.fatura_paga ? '' : ' finance-tag-agendado'}`}>
+                  {log.fatura_paga ? 'paga' : 'em aberto'}
+                </span>
+              )}
+            </span>
+          )}
+        </td>
+        <td data-label="Valor" className={log.tipo === 'receita' ? 'finance-positive' : 'finance-negative'}>
+          {log.tipo === 'receita' ? '+' : '-'}R$ {Number(log.valor).toFixed(2)}
+        </td>
+        <td>
+          <span className="row-actions">
+            <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
+              <PencilIcon />
+            </button>
+            <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
+              <TrashIcon />
+            </button>
+          </span>
+        </td>
+      </tr>
+    )
+  }
 
   if (loading) return <div className="page-loading">Carregando...</div>
 
@@ -215,10 +309,6 @@ export default function Financas() {
           <div>
             <span className="finance-summary-label">Saldo atual</span>
             <span className="finance-summary-value">R$ {saldoAtual.toFixed(2)}</span>
-          </div>
-          <div>
-            <span className="finance-summary-label">Previsto pro fim do mês</span>
-            <span className="finance-summary-value">R$ {previstoFimMes.toFixed(2)}</span>
           </div>
         </div>
 
@@ -282,6 +372,35 @@ export default function Financas() {
         )}
       </div>
 
+      <div className="card">
+        <h2>A vencer</h2>
+        <p className="empty-state">
+          Lançamentos com data futura — o que ainda não caiu na conta — somados à fatura do cartão já em aberto. Sem
+          limite de mês: lance quantos meses à frente quiser pra se planejar.
+        </p>
+        <p className="finance-invoice-note">
+          Se tudo isso cair hoje, seu saldo em conta fica em{' '}
+          <strong className={projecao < 0 ? 'finance-negative' : 'finance-positive'}>R$ {projecao.toFixed(2)}</strong>.
+        </p>
+
+        {logsFuturos.length === 0 ? (
+          <p className="empty-state">Nada agendado pra frente.</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>{logsFuturos.map(renderRow)}</tbody>
+          </table>
+        )}
+      </div>
+
       <form className="card" onSubmit={handleAdd}>
         <h2>Registrar</h2>
         <div className="grid-2">
@@ -323,8 +442,8 @@ export default function Financas() {
       </form>
 
       <div className="card">
-        <h2>Registros</h2>
-        {registros.length === 0 ? (
+        <h2>Lançamentos</h2>
+        {logsPassados.length === 0 ? (
           <p className="empty-state">Nada registrado ainda.</p>
         ) : (
           <table className="table">
@@ -337,100 +456,7 @@ export default function Financas() {
                 <th></th>
               </tr>
             </thead>
-            <tbody>
-              {registros.map((log) =>
-                editingId === log.id ? (
-                  <tr key={log.id}>
-                    <td colSpan={5}>
-                      <div className="inline-edit-row">
-                        <label>
-                          Data
-                          <input type="date" value={editData} onChange={(e) => setEditData(e.target.value)} required />
-                        </label>
-                        <label>
-                          Tipo
-                          <select value={editTipo} onChange={(e) => setEditTipo(e.target.value)}>
-                            <option value="receita">Entrada</option>
-                            <option value="despesa">Saída</option>
-                          </select>
-                        </label>
-                        <label>
-                          Valor (R$)
-                          <input
-                            type="number"
-                            step="0.01"
-                            value={editValor}
-                            onChange={(e) => setEditValor(e.target.value)}
-                            required
-                          />
-                        </label>
-                        {editTipo === 'despesa' && (
-                          <label>
-                            Forma
-                            <select value={editForma} onChange={(e) => setEditForma(e.target.value)}>
-                              {FORMAS.map((f) => (
-                                <option key={f.key} value={f.key}>
-                                  {f.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        )}
-                        <label>
-                          Descrição (opcional)
-                          <input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
-                        </label>
-                        <button type="button" onClick={() => handleSaveEdit(log.id)}>
-                          Salvar
-                        </button>
-                        <button type="button" className="link-button" onClick={() => setEditingId(null)}>
-                          Cancelar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={log.id}>
-                    <td data-label="Data">
-                      {new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}
-                      {log.data > hoje && (
-                        <>
-                          {' '}
-                          <span className="finance-tag finance-tag-agendado">agendado</span>
-                        </>
-                      )}
-                    </td>
-                    <td data-label="Tipo">{log.tipo === 'receita' ? 'Entrada' : 'Saída'}</td>
-                    <td data-label="Descrição">
-                      {log.descricao || log.categoria || '-'}
-                      {log.tipo === 'despesa' && (
-                        <span className="finance-tags">
-                          <span className="finance-tag">{formaLabel(log.forma_pagamento || 'debito')}</span>
-                          {log.forma_pagamento === 'credito' && (
-                            <span className={`finance-tag${log.fatura_paga ? '' : ' finance-tag-agendado'}`}>
-                              {log.fatura_paga ? 'paga' : 'em aberto'}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Valor" className={log.tipo === 'receita' ? 'finance-positive' : 'finance-negative'}>
-                      {log.tipo === 'receita' ? '+' : '-'}R$ {Number(log.valor).toFixed(2)}
-                    </td>
-                    <td>
-                      <span className="row-actions">
-                        <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
-                          <PencilIcon />
-                        </button>
-                        <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
-                          <TrashIcon />
-                        </button>
-                      </span>
-                    </td>
-                  </tr>
-                )
-              )}
-            </tbody>
+            <tbody>{logsPassados.map(renderRow)}</tbody>
           </table>
         )}
       </div>
