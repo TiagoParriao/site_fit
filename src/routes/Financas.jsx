@@ -13,7 +13,8 @@ import {
   formaPagamentoLabel,
   classeLabel,
 } from '../lib/financeCategories'
-import { todayISO } from '../lib/dates'
+import { todayISO, daysInMonth as daysInMonthOf, occurrenceDateForMonth } from '../lib/dates'
+import { materializeSubscriptions } from '../lib/subscriptions'
 import { PencilIcon, TrashIcon } from '../components/icons'
 
 function firstDayOfMonthISO(dataISO) {
@@ -22,7 +23,7 @@ function firstDayOfMonthISO(dataISO) {
 
 function daysInMonth(mesAnoISO) {
   const [y, m] = mesAnoISO.split('-').map(Number)
-  return new Date(y, m, 0).getDate()
+  return daysInMonthOf(y, m)
 }
 
 export default function Financas() {
@@ -54,6 +55,24 @@ export default function Financas() {
 
   const [filtroPagamento, setFiltroPagamento] = useState('todos')
 
+  const [subscriptions, setSubscriptions] = useState([])
+  const [novoTipoSub, setNovoTipoSub] = useState('despesa')
+  const [novoValorSub, setNovoValorSub] = useState('')
+  const [novaCategoriaSub, setNovaCategoriaSub] = useState(DESPESA_CATEGORIES[0].key)
+  const [novaFormaPagamentoSub, setNovaFormaPagamentoSub] = useState('debito')
+  const [novaClasseSub, setNovaClasseSub] = useState(DESPESA_CATEGORIES[0].classe)
+  const [novoDiaMes, setNovoDiaMes] = useState('10')
+  const [novaDescricaoSub, setNovaDescricaoSub] = useState('')
+
+  const [editingSubId, setEditingSubId] = useState(null)
+  const [editTipoSub, setEditTipoSub] = useState('despesa')
+  const [editValorSub, setEditValorSub] = useState('')
+  const [editCategoriaSub, setEditCategoriaSub] = useState('')
+  const [editFormaPagamentoSub, setEditFormaPagamentoSub] = useState('debito')
+  const [editClasseSub, setEditClasseSub] = useState('diario')
+  const [editDiaMes, setEditDiaMes] = useState('10')
+  const [editDescricaoSub, setEditDescricaoSub] = useState('')
+
   const [editingId, setEditingId] = useState(null)
   const [editTipo, setEditTipo] = useState('despesa')
   const [editValor, setEditValor] = useState('')
@@ -67,6 +86,16 @@ export default function Financas() {
 
   const load = useCallback(async () => {
     setLoading(true)
+    const subsRes = await supabase
+      .from('finance_subscriptions')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('dia_mes', { ascending: true })
+    const subs = subsRes.data ?? []
+    setSubscriptions(subs)
+
+    await materializeSubscriptions(supabase, user.id, subs, mesAtual)
+
     const [logsRes, goalRes, balanceRes, incomeRes] = await Promise.all([
       supabase.from('finance_logs').select('*').eq('user_id', user.id).order('data', { ascending: false }),
       supabase.from('finance_goals').select('*').eq('user_id', user.id).eq('mes_ano', mesAtual).maybeSingle(),
@@ -206,6 +235,88 @@ export default function Financas() {
     load()
   }
 
+  async function handleAddSubscription(e) {
+    e.preventDefault()
+    setError('')
+    const isDespesa = novoTipoSub === 'despesa'
+    const { error } = await supabase.from('finance_subscriptions').insert({
+      user_id: user.id,
+      tipo: novoTipoSub,
+      valor: Number(novoValorSub),
+      categoria: novaCategoriaSub,
+      forma_pagamento: isDespesa ? novaFormaPagamentoSub : null,
+      classe: isDespesa ? novaClasseSub : null,
+      descricao: novaDescricaoSub || null,
+      dia_mes: Number(novoDiaMes),
+    })
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setNovoValorSub('')
+    setNovaDescricaoSub('')
+    load()
+  }
+
+  async function handleToggleSubscription(sub) {
+    const novaAtiva = !sub.ativa
+    await supabase.from('finance_subscriptions').update({ ativa: novaAtiva }).eq('id', sub.id)
+    if (!novaAtiva) {
+      // Pausou: some o lançamento deste mês que ainda não aconteceu (o que já aconteceu fica no histórico).
+      await supabase.from('finance_logs').delete().eq('subscription_id', sub.id).gt('data', todayISO())
+    }
+    load()
+  }
+
+  async function handleDeleteSubscription(id) {
+    await supabase.from('finance_logs').delete().eq('subscription_id', id).gt('data', todayISO())
+    await supabase.from('finance_subscriptions').delete().eq('id', id)
+    load()
+  }
+
+  function startEditSubscription(sub) {
+    setEditingSubId(sub.id)
+    setEditTipoSub(sub.tipo)
+    setEditValorSub(String(sub.valor))
+    setEditCategoriaSub(sub.categoria)
+    setEditFormaPagamentoSub(sub.forma_pagamento || 'debito')
+    setEditClasseSub(sub.classe || defaultClasseForCategoria(sub.categoria))
+    setEditDiaMes(String(sub.dia_mes))
+    setEditDescricaoSub(sub.descricao || '')
+  }
+
+  async function handleSaveEditSubscription(id) {
+    setError('')
+    const isDespesa = editTipoSub === 'despesa'
+    const diaMes = Number(editDiaMes)
+    const camposComuns = {
+      tipo: editTipoSub,
+      valor: Number(editValorSub),
+      categoria: editCategoriaSub,
+      forma_pagamento: isDespesa ? editFormaPagamentoSub : null,
+      classe: isDespesa ? editClasseSub : null,
+      descricao: editDescricaoSub || null,
+    }
+    const { error } = await supabase
+      .from('finance_subscriptions')
+      .update({ ...camposComuns, dia_mes: diaMes })
+      .eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    // Sincroniza o lançamento deste mês se ele ainda não aconteceu — senão a
+    // edição só valeria a partir do mês que vem.
+    const [year, month] = mesAtual.split('-').map(Number)
+    await supabase
+      .from('finance_logs')
+      .update({ ...camposComuns, data: occurrenceDateForMonth(year, month, diaMes) })
+      .eq('subscription_id', id)
+      .gt('data', todayISO())
+    setEditingSubId(null)
+    load()
+  }
+
   const despesasMes = useMemo(
     () => logs.filter((l) => l.tipo === 'despesa' && l.data.slice(0, 7) === mesAtual.slice(0, 7)),
     [logs, mesAtual]
@@ -248,7 +359,16 @@ export default function Financas() {
     () => despesasMes.filter((l) => l.forma_pagamento === 'credito').reduce((sum, l) => sum + Number(l.valor), 0),
     [despesasMes]
   )
-  const sobraPrevista = salario - saidasFixas - faturaAtual
+  // Saídas fixas pagas no crédito já estão contadas dentro da fatura — só as pagas
+  // fora do crédito (débito/pix/dinheiro) entram aqui, senão descontaria duas vezes.
+  const saidasFixasForaCredito = useMemo(
+    () =>
+      despesasMes
+        .filter((l) => l.classe === 'fixa' && l.forma_pagamento !== 'credito')
+        .reduce((sum, l) => sum + Number(l.valor), 0),
+    [despesasMes]
+  )
+  const sobraPrevista = salario - saidasFixasForaCredito - faturaAtual
 
   const statusFatura = useMemo(() => {
     if (!income?.salario) return 'sem-dados'
@@ -261,6 +381,11 @@ export default function Financas() {
   const filteredLogs = useMemo(
     () => (filtroPagamento === 'todos' ? logs : logs.filter((l) => l.forma_pagamento === filtroPagamento)),
     [logs, filtroPagamento]
+  )
+
+  const proximosLancamentos = useMemo(
+    () => logs.filter((l) => l.data > todayISO()).sort((a, b) => (a.data < b.data ? -1 : 1)),
+    [logs]
   )
 
   if (loading) return <div className="page-loading">Carregando...</div>
@@ -431,6 +556,254 @@ export default function Financas() {
             </ul>
           </>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Próximos lançamentos</h2>
+        {proximosLancamentos.length === 0 ? (
+          <p className="empty-state">Nada agendado pra frente.</p>
+        ) : (
+          <ul className="finance-category-breakdown">
+            {proximosLancamentos.map((log) => (
+              <li key={log.id}>
+                <span>
+                  {new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')} —{' '}
+                  {log.descricao || categoryLabel(log.tipo, log.categoria)}
+                  {log.subscription_id && (
+                    <>
+                      {' '}
+                      <span className="finance-tag">assinatura</span>
+                    </>
+                  )}
+                </span>
+                <span className={log.tipo === 'receita' ? 'finance-positive' : 'finance-negative'}>
+                  {log.tipo === 'receita' ? '+' : '-'}R$ {Number(log.valor).toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="card">
+        <h2>Assinaturas e pagamentos recorrentes</h2>
+        <p className="empty-state">
+          Cadastre uma vez e o lançamento entra sozinho todo mês, no dia certo — sem precisar digitar de novo.
+        </p>
+
+        {subscriptions.length > 0 && (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Dia</th>
+                <th>Tipo</th>
+                <th>Categoria</th>
+                <th>Valor</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {subscriptions.map((sub) =>
+                editingSubId === sub.id ? (
+                  <tr key={sub.id}>
+                    <td colSpan={5}>
+                      <div className="inline-edit-row">
+                        <label>
+                          Dia do mês
+                          <input
+                            type="number"
+                            min="1"
+                            max="31"
+                            value={editDiaMes}
+                            onChange={(e) => setEditDiaMes(e.target.value)}
+                            required
+                          />
+                        </label>
+                        <label>
+                          Tipo
+                          <select
+                            value={editTipoSub}
+                            onChange={(e) =>
+                              setEditTipoSub(handleTipoChange(e.target.value, setEditCategoriaSub, setEditClasseSub))
+                            }
+                          >
+                            <option value="receita">Receita</option>
+                            <option value="despesa">Despesa</option>
+                          </select>
+                        </label>
+                        <label>
+                          Categoria
+                          <select
+                            value={editCategoriaSub}
+                            onChange={(e) => handleCategoriaChange(e.target.value, setEditCategoriaSub, setEditClasseSub)}
+                          >
+                            {categoriesForTipo(editTipoSub).map((c) => (
+                              <option key={c.key} value={c.key}>
+                                {c.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          Valor (R$)
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={editValorSub}
+                            onChange={(e) => setEditValorSub(e.target.value)}
+                            required
+                          />
+                        </label>
+                        {editTipoSub === 'despesa' && (
+                          <>
+                            <label>
+                              Meio de pagamento
+                              <select
+                                value={editFormaPagamentoSub}
+                                onChange={(e) => setEditFormaPagamentoSub(e.target.value)}
+                              >
+                                {FORMAS_PAGAMENTO.map((f) => (
+                                  <option key={f.key} value={f.key}>
+                                    {f.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              Classe
+                              <select value={editClasseSub} onChange={(e) => setEditClasseSub(e.target.value)}>
+                                {CLASSES_GASTO.map((c) => (
+                                  <option key={c.key} value={c.key}>
+                                    {c.label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                          </>
+                        )}
+                        <label>
+                          Descrição (opcional)
+                          <input value={editDescricaoSub} onChange={(e) => setEditDescricaoSub(e.target.value)} />
+                        </label>
+                        <button type="button" onClick={() => handleSaveEditSubscription(sub.id)}>
+                          Salvar
+                        </button>
+                        <button type="button" className="link-button" onClick={() => setEditingSubId(null)}>
+                          Cancelar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={sub.id} className={sub.ativa ? '' : 'finance-subscription-inativa'}>
+                    <td data-label="Dia">todo dia {sub.dia_mes}</td>
+                    <td data-label="Tipo">{sub.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
+                    <td data-label="Categoria">
+                      {sub.descricao || categoryLabel(sub.tipo, sub.categoria)}
+                      {!sub.ativa && (
+                        <>
+                          {' '}
+                          <span className="finance-tag">pausada</span>
+                        </>
+                      )}
+                    </td>
+                    <td data-label="Valor" className={sub.tipo === 'receita' ? 'finance-positive' : 'finance-negative'}>
+                      {sub.tipo === 'receita' ? '+' : '-'}R$ {Number(sub.valor).toFixed(2)}
+                    </td>
+                    <td>
+                      <span className="row-actions">
+                        <button
+                          className="icon-button"
+                          title={sub.ativa ? 'pausar' : 'reativar'}
+                          onClick={() => handleToggleSubscription(sub)}
+                        >
+                          {sub.ativa ? '⏸' : '▶'}
+                        </button>
+                        <button className="icon-button" title="editar" onClick={() => startEditSubscription(sub)}>
+                          <PencilIcon />
+                        </button>
+                        <button className="icon-button" title="remover" onClick={() => handleDeleteSubscription(sub.id)}>
+                          <TrashIcon />
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                )
+              )}
+            </tbody>
+          </table>
+        )}
+
+        <form className="stacked-form" onSubmit={handleAddSubscription}>
+          <div className="grid-2">
+            <label>
+              Tipo
+              <select
+                value={novoTipoSub}
+                onChange={(e) => setNovoTipoSub(handleTipoChange(e.target.value, setNovaCategoriaSub, setNovaClasseSub))}
+              >
+                <option value="receita">Receita</option>
+                <option value="despesa">Despesa</option>
+              </select>
+            </label>
+            <label>
+              Valor (R$)
+              <input type="number" step="0.01" value={novoValorSub} onChange={(e) => setNovoValorSub(e.target.value)} required />
+            </label>
+          </div>
+          <div className="grid-2">
+            <label>
+              Categoria
+              <select
+                value={novaCategoriaSub}
+                onChange={(e) => handleCategoriaChange(e.target.value, setNovaCategoriaSub, setNovaClasseSub)}
+              >
+                {categoriesForTipo(novoTipoSub).map((c) => (
+                  <option key={c.key} value={c.key}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Dia do mês
+              <input type="number" min="1" max="31" value={novoDiaMes} onChange={(e) => setNovoDiaMes(e.target.value)} required />
+            </label>
+          </div>
+          {novoTipoSub === 'despesa' && (
+            <div className="grid-2">
+              <label>
+                Meio de pagamento
+                <select value={novaFormaPagamentoSub} onChange={(e) => setNovaFormaPagamentoSub(e.target.value)}>
+                  {FORMAS_PAGAMENTO.map((f) => (
+                    <option key={f.key} value={f.key}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Classe
+                <select value={novaClasseSub} onChange={(e) => setNovaClasseSub(e.target.value)}>
+                  {CLASSES_GASTO.map((c) => (
+                    <option key={c.key} value={c.key}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          )}
+          <label>
+            Descrição (opcional)
+            <input
+              value={novaDescricaoSub}
+              onChange={(e) => setNovaDescricaoSub(e.target.value)}
+              placeholder="Ex: Netflix"
+            />
+          </label>
+          <button type="submit">Adicionar assinatura</button>
+        </form>
       </div>
 
       <form className="card" onSubmit={handleAdd}>
@@ -618,7 +991,15 @@ export default function Financas() {
                   </tr>
                 ) : (
                   <tr key={log.id}>
-                    <td data-label="Data">{new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}</td>
+                    <td data-label="Data">
+                      {new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}
+                      {log.data > todayISO() && (
+                        <>
+                          {' '}
+                          <span className="finance-tag finance-tag-agendado">agendado</span>
+                        </>
+                      )}
+                    </td>
                     <td data-label="Tipo">{log.tipo === 'receita' ? 'Receita' : 'Despesa'}</td>
                     <td data-label="Categoria">
                       {categoryLabel(log.tipo, log.categoria)}
@@ -626,6 +1007,7 @@ export default function Financas() {
                         <span className="finance-tags">
                           <span className="finance-tag">{formaPagamentoLabel(log.forma_pagamento)}</span>
                           <span className="finance-tag">{classeLabel(log.classe)}</span>
+                          {log.subscription_id && <span className="finance-tag">assinatura</span>}
                         </span>
                       )}
                     </td>

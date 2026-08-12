@@ -806,6 +806,16 @@ button:disabled {
   color: var(--text-muted);
 }
 
+.finance-tag-agendado {
+  background: rgba(240, 160, 32, 0.14);
+  border-color: transparent;
+  color: var(--warning);
+}
+
+.finance-subscription-inativa {
+  opacity: 0.5;
+}
+
 /* Weight diff badge */
 
 .weight-diff {

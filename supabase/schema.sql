@@ -440,3 +440,43 @@ create policy "finance_income_update_self" on public.finance_income
 
 create policy "finance_income_delete_self" on public.finance_income
   for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: Assinaturas e pagamentos agendados ============
+-- Assinatura = lançamento recorrente (ex: Netflix todo dia 10). Ao abrir a
+-- aba Finanças, o app garante que o lançamento do mês corrente já existe em
+-- finance_logs (subscription_id aponta pra origem). Pagamento agendado é só
+-- um finance_logs normal com data futura — a tela de Finanças identifica isso
+-- comparando com a data de hoje.
+
+create table if not exists public.finance_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  tipo text not null check (tipo in ('receita', 'despesa')),
+  valor numeric not null check (valor > 0),
+  categoria text not null,
+  forma_pagamento text check (forma_pagamento in ('debito', 'credito')),
+  classe text check (classe in ('fixa', 'diario')),
+  descricao text,
+  dia_mes integer not null check (dia_mes between 1 and 31),
+  ativa boolean not null default true,
+  data_inicio date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists finance_subscriptions_user_idx on public.finance_subscriptions (user_id);
+
+alter table public.finance_logs add column if not exists subscription_id uuid references public.finance_subscriptions (id) on delete set null;
+
+alter table public.finance_subscriptions enable row level security;
+
+create policy "finance_subscriptions_select_self" on public.finance_subscriptions
+  for select using (user_id = auth.uid());
+
+create policy "finance_subscriptions_insert_self" on public.finance_subscriptions
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_subscriptions_update_self" on public.finance_subscriptions
+  for update using (user_id = auth.uid());
+
+create policy "finance_subscriptions_delete_self" on public.finance_subscriptions
+  for delete using (user_id = auth.uid());
