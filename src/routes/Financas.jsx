@@ -260,14 +260,15 @@ export default function Financas() {
     const novaAtiva = !sub.ativa
     await supabase.from('finance_subscriptions').update({ ativa: novaAtiva }).eq('id', sub.id)
     if (!novaAtiva) {
-      // Pausou: some o lançamento deste mês que ainda não aconteceu (o que já aconteceu fica no histórico).
-      await supabase.from('finance_logs').delete().eq('subscription_id', sub.id).gt('data', todayISO())
+      // Pausou: some o lançamento deste mês (histórico de meses anteriores fica intacto).
+      await supabase.from('finance_logs').delete().eq('subscription_id', sub.id).gte('data', mesAtual)
     }
     load()
   }
 
   async function handleDeleteSubscription(id) {
-    await supabase.from('finance_logs').delete().eq('subscription_id', id).gt('data', todayISO())
+    // Apaga o lançamento deste mês junto (histórico de meses anteriores fica intacto).
+    await supabase.from('finance_logs').delete().eq('subscription_id', id).gte('data', mesAtual)
     await supabase.from('finance_subscriptions').delete().eq('id', id)
     load()
   }
