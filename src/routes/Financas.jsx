@@ -72,6 +72,8 @@ export default function Financas() {
   const [editDiaMes, setEditDiaMes] = useState('10')
   const [editDescricaoSub, setEditDescricaoSub] = useState('')
 
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
+
   const [editingId, setEditingId] = useState(null)
   const [editTipo, setEditTipo] = useState('despesa')
   const [editValor, setEditValor] = useState('')
@@ -149,6 +151,29 @@ export default function Financas() {
 
   async function handleDelete(id) {
     await supabase.from('finance_logs').delete().eq('id', id)
+    load()
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll(idsOnScreen) {
+    setSelectedIds((prev) => {
+      const allSelected = idsOnScreen.length > 0 && idsOnScreen.every((id) => prev.has(id))
+      return allSelected ? new Set() : new Set(idsOnScreen)
+    })
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return
+    await supabase.from('finance_logs').delete().in('id', Array.from(selectedIds))
+    setSelectedIds(new Set())
     load()
   }
 
@@ -887,12 +912,33 @@ export default function Financas() {
             </button>
           ))}
         </div>
+        {selectedIds.size > 0 && (
+          <div className="finance-bulk-bar">
+            <span>
+              {selectedIds.size} selecionado{selectedIds.size > 1 ? 's' : ''}
+            </span>
+            <button type="button" className="link-button" onClick={() => setSelectedIds(new Set())}>
+              Cancelar seleção
+            </button>
+            <button type="button" onClick={handleBulkDelete}>
+              Excluir selecionados
+            </button>
+          </div>
+        )}
         {filteredLogs.length === 0 ? (
           <p className="empty-state">Nada registrado ainda.</p>
         ) : (
           <table className="table">
             <thead>
               <tr>
+                <th>
+                  <input
+                    type="checkbox"
+                    checked={filteredLogs.length > 0 && filteredLogs.every((l) => selectedIds.has(l.id))}
+                    onChange={() => toggleSelectAll(filteredLogs.map((l) => l.id))}
+                    title="Selecionar todos"
+                  />
+                </th>
                 <th>Data</th>
                 <th>Tipo</th>
                 <th>Categoria</th>
@@ -905,7 +951,7 @@ export default function Financas() {
               {filteredLogs.map((log) =>
                 editingId === log.id ? (
                   <tr key={log.id}>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="inline-edit-row">
                         <label>
                           Data
@@ -983,6 +1029,9 @@ export default function Financas() {
                   </tr>
                 ) : (
                   <tr key={log.id}>
+                    <td>
+                      <input type="checkbox" checked={selectedIds.has(log.id)} onChange={() => toggleSelect(log.id)} />
+                    </td>
                     <td data-label="Data">
                       {new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}
                       {log.data > todayISO() && (
