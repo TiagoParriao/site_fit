@@ -50,7 +50,6 @@ export default function Financas() {
   const [novoSaldo, setNovoSaldo] = useState('')
 
   const [editingIncome, setEditingIncome] = useState(false)
-  const [novoSalario, setNovoSalario] = useState('')
   const [novaMetaDiaria, setNovaMetaDiaria] = useState('')
 
   const [filtroPagamento, setFiltroPagamento] = useState('todos')
@@ -222,7 +221,6 @@ export default function Financas() {
       {
         user_id: user.id,
         mes_ano: mesAtual,
-        salario: novoSalario === '' ? null : Number(novoSalario),
         meta_diaria: novaMetaDiaria === '' ? null : Number(novaMetaDiaria),
       },
       { onConflict: 'user_id,mes_ano' }
@@ -347,7 +345,11 @@ export default function Financas() {
     [despesasMes]
   )
 
-  const salario = Number(income?.salario ?? 0)
+  const receitasMes = useMemo(
+    () => logs.filter((l) => l.tipo === 'receita' && l.data.slice(0, 7) === mesAtual.slice(0, 7)),
+    [logs, mesAtual]
+  )
+  const salario = useMemo(() => receitasMes.reduce((sum, l) => sum + Number(l.valor), 0), [receitasMes])
   const saldoParaDiario = salario - saidasFixas
   const limiteDiarioMaximo = useMemo(() => {
     const dias = daysInMonth(mesAtual)
@@ -371,12 +373,11 @@ export default function Financas() {
   const sobraPrevista = salario - saidasFixasForaCredito - faturaAtual
 
   const statusFatura = useMemo(() => {
-    if (!income?.salario) return 'sem-dados'
     const margem = saldoParaDiario > 0 ? sobraPrevista / saldoParaDiario : sobraPrevista >= 0 ? 1 : -1
     if (sobraPrevista < 0) return 'vermelho'
     if (margem < 0.15) return 'amarelo'
     return 'verde'
-  }, [income, sobraPrevista, saldoParaDiario])
+  }, [sobraPrevista, saldoParaDiario])
 
   const filteredLogs = useMemo(
     () => (filtroPagamento === 'todos' ? logs : logs.filter((l) => l.forma_pagamento === filtroPagamento)),
@@ -399,11 +400,12 @@ export default function Financas() {
       <div className="card">
         <h2>Limite diário</h2>
         <p className="empty-state">
-          Salário menos saídas fixas, dividido pelos dias do mês — o teto pra gastar no dia a dia sem alimentar o cartão.
+          Receitas menos saídas fixas, dividido pelos dias do mês — o teto pra gastar no dia a dia sem alimentar o cartão.
+          Lance suas receitas em "Registrar" assim que caírem que o cálculo se ajusta sozinho.
         </p>
         <div className="finance-limit-grid">
           <div>
-            <span className="finance-limit-label">Salário do mês</span>
+            <span className="finance-limit-label">Receitas do mês (automático)</span>
             <span className="finance-limit-value">R$ {salario.toFixed(2)}</span>
           </div>
           <div>
@@ -423,10 +425,6 @@ export default function Financas() {
         {editingIncome ? (
           <form onSubmit={handleSetIncome} className="form-actions">
             <label>
-              Salário / renda líquida do mês (R$)
-              <input type="number" step="0.01" value={novoSalario} onChange={(e) => setNovoSalario(e.target.value)} />
-            </label>
-            <label>
               Meta de teto diário reduzido (R$, opcional)
               <input
                 type="number"
@@ -445,12 +443,11 @@ export default function Financas() {
           <button
             className="link-button"
             onClick={() => {
-              setNovoSalario(income?.salario != null ? String(income.salario) : '')
               setNovaMetaDiaria(income?.meta_diaria != null ? String(income.meta_diaria) : '')
               setEditingIncome(true)
             }}
           >
-            {income ? 'Editar salário e meta diária' : 'Definir salário e meta diária'}
+            {income?.meta_diaria != null ? 'Editar meta de teto diário' : 'Definir meta de teto diário (opcional)'}
           </button>
         )}
 
@@ -460,30 +457,24 @@ export default function Financas() {
 
       <div className="card">
         <h2>Termômetro da fatura</h2>
-        {!income?.salario ? (
-          <p className="empty-state">Defina seu salário no card acima pra ver a projeção da fatura.</p>
-        ) : (
-          <>
-            <div className="finance-limit-grid">
-              <div>
-                <span className="finance-limit-label">Fatura acumulada no mês (crédito)</span>
-                <span className="finance-limit-value">R$ {faturaAtual.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="finance-limit-label">Sobra prevista no débito</span>
-                <span className="finance-limit-value">R$ {sobraPrevista.toFixed(2)}</span>
-              </div>
-            </div>
-            <p className={`finance-status-badge finance-status-${statusFatura}`}>
-              {statusFatura === 'verde' &&
-                `A fatura do mês que vem virá menor! Deve sobrar R$ ${sobraPrevista.toFixed(2)} livres no débito.`}
-              {statusFatura === 'amarelo' &&
-                `Atenção: a folga está apertada, só R$ ${sobraPrevista.toFixed(2)} de sobra prevista.`}
-              {statusFatura === 'vermelho' &&
-                `Alerta: a fatura já consome tudo (e falta R$ ${Math.abs(sobraPrevista).toFixed(2)}). Você continua preso no cartão.`}
-            </p>
-          </>
-        )}
+        <div className="finance-limit-grid">
+          <div>
+            <span className="finance-limit-label">Fatura acumulada no mês (crédito)</span>
+            <span className="finance-limit-value">R$ {faturaAtual.toFixed(2)}</span>
+          </div>
+          <div>
+            <span className="finance-limit-label">Sobra prevista no débito</span>
+            <span className="finance-limit-value">R$ {sobraPrevista.toFixed(2)}</span>
+          </div>
+        </div>
+        <p className={`finance-status-badge finance-status-${statusFatura}`}>
+          {statusFatura === 'verde' &&
+            `A fatura do mês que vem virá menor! Deve sobrar R$ ${sobraPrevista.toFixed(2)} livres no débito.`}
+          {statusFatura === 'amarelo' &&
+            `Atenção: a folga está apertada, só R$ ${sobraPrevista.toFixed(2)} de sobra prevista.`}
+          {statusFatura === 'vermelho' &&
+            `Alerta: a fatura já consome tudo (e falta R$ ${Math.abs(sobraPrevista).toFixed(2)}). Você continua preso no cartão.`}
+        </p>
       </div>
 
       <div className="card">
