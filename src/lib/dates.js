@@ -20,12 +20,3 @@ export function addDaysISO(dataISO, days) {
   d.setDate(d.getDate() + days)
   return toLocalISO(d)
 }
-
-export function daysInMonth(year, month) {
-  return new Date(year, month, 0).getDate()
-}
-
-export function occurrenceDateForMonth(year, month, diaMes) {
-  const dia = Math.min(diaMes, daysInMonth(year, month))
-  return toLocalISO(new Date(year, month - 1, dia))
-}

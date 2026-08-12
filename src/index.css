@@ -718,23 +718,7 @@ button:disabled {
   border-radius: 999px;
 }
 
-/* Finance category breakdown */
-
-.finance-category-breakdown {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 0;
-  margin: 8px 0 0;
-  list-style: none;
-}
-
-.finance-category-breakdown li {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  color: var(--text-muted);
-}
+/* Finance */
 
 .finance-positive {
   color: var(--success);
@@ -744,51 +728,51 @@ button:disabled {
   color: var(--danger);
 }
 
-/* Finance: limite diário / termômetro */
-
-.finance-limit-grid {
+.finance-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 12px;
   margin: 12px 0;
 }
 
-.finance-limit-label {
+.finance-summary-label {
   display: block;
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.finance-limit-value {
+.finance-summary-value {
   display: block;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 700;
 }
 
-.finance-status-badge {
-  margin: 10px 0 0;
-  padding: 10px 14px;
-  border-radius: 10px;
+.finance-invoice-total {
+  font-size: 30px;
+  font-weight: 800;
+  margin: 4px 0 0;
+}
+
+.finance-invoice-note {
   font-size: 13px;
-  font-weight: 600;
+  color: var(--text-muted);
 }
 
-.finance-status-verde {
-  background: rgba(46, 204, 113, 0.12);
-  color: var(--success);
+.finance-invoice-list {
+  list-style: none;
+  margin: 10px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.finance-status-amarelo {
-  background: rgba(240, 160, 32, 0.14);
-  color: var(--warning);
+.finance-invoice-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-muted);
 }
-
-.finance-status-vermelho {
-  background: rgba(231, 76, 60, 0.12);
-  color: var(--danger);
-}
-
-/* Finance: tags de meio de pagamento / classe */
 
 .finance-tags {
   display: flex;
@@ -810,49 +794,6 @@ button:disabled {
   background: rgba(240, 160, 32, 0.14);
   border-color: transparent;
   color: var(--warning);
-}
-
-.finance-subscription-inativa {
-  opacity: 0.5;
-}
-
-.finance-bulk-bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.finance-bulk-bar button {
-  padding: 6px 12px;
-}
-
-.finance-category-goals {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.finance-category-goal-item {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 14px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.finance-category-goal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
-  font-size: 14px;
 }
 
 /* Weight diff badge */

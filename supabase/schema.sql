@@ -518,3 +518,16 @@ create policy "finance_category_goals_delete_self" on public.finance_category_go
 create unique index if not exists finance_logs_subscription_data_unique
   on public.finance_logs (subscription_id, data)
   where subscription_id is not null;
+
+-- ============ MIGRAÇÃO: Finanças simplificada ============
+-- Reduz Finanças a 3 conceitos: entrada, saída (na conta ou no cartão) e
+-- fatura do cartão. Nada é apagado: categoria/classe/assinaturas/metas ficam
+-- de fora da tela nova, mas os dados antigos continuam no banco.
+--
+-- fatura_paga marca se uma saída no cartão (forma_pagamento = 'credito') já
+-- foi coberta por um pagamento de fatura. Só assim o saldo em conta nunca
+-- desconta a mesma compra duas vezes (uma na hora da compra, outra quando a
+-- fatura fecha) — que era a origem do cálculo sem sentido na tela antiga.
+
+alter table public.finance_logs alter column categoria drop not null;
+alter table public.finance_logs add column if not exists fatura_paga boolean not null default false;
