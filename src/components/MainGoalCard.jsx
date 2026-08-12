@@ -1,8 +1,5 @@
 import { useState } from 'react'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO } from '../lib/dates'
 
 function diaAtual(dataInicio) {
   const inicio = new Date(`${dataInicio}T00:00:00`)

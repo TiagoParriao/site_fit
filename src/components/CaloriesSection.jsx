@@ -5,15 +5,11 @@ import CalorieProgressBar from './CalorieProgressBar'
 import PeriodSelector from './PeriodSelector'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { fetchMealTypeAverages } from '../lib/mealAverages'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO, addDaysISO } from '../lib/dates'
+import { PencilIcon, TrashIcon } from './icons'
 
 function yesterdayOf(dataISO) {
-  const d = new Date(`${dataISO}T00:00:00`)
-  d.setDate(d.getDate() - 1)
-  return d.toISOString().slice(0, 10)
+  return addDaysISO(dataISO, -1)
 }
 
 function nowHHMM() {
@@ -327,10 +323,10 @@ export default function CaloriesSection() {
                   <td>
                     <span className="row-actions">
                       <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
-                        ✏️
+                        <PencilIcon />
                       </button>
                       <button className="icon-button" title="remover" onClick={() => handleDelete(e.id)}>
-                        🗑️
+                        <TrashIcon />
                       </button>
                     </span>
                   </td>

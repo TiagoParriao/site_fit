@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { colorForUser } from '../lib/avatarColor'
+import MemberProfileModal from '../components/MemberProfileModal'
 
 export default function Group() {
   const { user, updateProfile } = useAuth()
@@ -9,6 +10,7 @@ export default function Group() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
+  const [selectedMember, setSelectedMember] = useState(null)
 
   const [novoNome, setNovoNome] = useState('')
   const [codigoEntrada, setCodigoEntrada] = useState('')
@@ -127,7 +129,13 @@ export default function Group() {
             <ul className="member-list">
               {g.members.map((m) => (
                 <li key={m.user_id} className="member-color-row">
-                  <span>{m.profiles?.nome ?? 'Membro'}</span>
+                  <button
+                    type="button"
+                    className="link-button"
+                    onClick={() => setSelectedMember({ user_id: m.user_id, nome: m.profiles?.nome ?? 'Membro' })}
+                  >
+                    {m.profiles?.nome ?? 'Membro'}
+                  </button>
                   {m.user_id === user.id ? (
                     <input
                       type="color"
@@ -148,6 +156,8 @@ export default function Group() {
           </div>
         ))
       )}
+
+      {selectedMember && <MemberProfileModal member={selectedMember} onClose={() => setSelectedMember(null)} />}
     </div>
   )
 }

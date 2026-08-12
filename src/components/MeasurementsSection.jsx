@@ -3,10 +3,8 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { fetchMeasurements, latestByName, historyForName } from '../lib/measurements'
 import MeasurementChart from './MeasurementChart'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO } from '../lib/dates'
+import { PencilIcon, TrashIcon } from './icons'
 
 export default function MeasurementsSection() {
   const { user } = useAuth()
@@ -194,10 +192,10 @@ export default function MeasurementsSection() {
                       <td>
                         <span className="row-actions">
                           <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
-                            ✏️
+                            <PencilIcon />
                           </button>
                           <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
-                            🗑️
+                            <TrashIcon />
                           </button>
                         </span>
                       </td>

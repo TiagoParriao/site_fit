@@ -4,10 +4,8 @@ import { useAuth } from '../context/AuthContext'
 import PeriodSelector from './PeriodSelector'
 import ExerciseChart from './ExerciseChart'
 import { fetchExerciseHistory } from '../lib/exerciseHistory'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO } from '../lib/dates'
+import { PencilIcon, TrashIcon } from './icons'
 
 export default function ExerciseSection() {
   const { user } = useAuth()
@@ -218,10 +216,10 @@ export default function ExerciseSection() {
                   <td>
                     <span className="row-actions">
                       <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
-                        ✏️
+                        <PencilIcon />
                       </button>
                       <button className="icon-button" title="remover" onClick={() => handleDelete(e.id)}>
-                        🗑️
+                        <TrashIcon />
                       </button>
                     </span>
                   </td>

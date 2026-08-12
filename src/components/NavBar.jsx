@@ -6,7 +6,7 @@ export default function NavBar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar-brand">🔥 Fit Trail</span>
+      <span className="navbar-brand">Magros Skinnys</span>
       <div className="navbar-links">
         <NavLink to="/" end>
           Trilha

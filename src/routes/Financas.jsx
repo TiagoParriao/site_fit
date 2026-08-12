@@ -13,10 +13,8 @@ import {
   formaPagamentoLabel,
   classeLabel,
 } from '../lib/financeCategories'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO } from '../lib/dates'
+import { PencilIcon, TrashIcon } from '../components/icons'
 
 function firstDayOfMonthISO(dataISO) {
   return `${dataISO.slice(0, 7)}-01`
@@ -638,10 +636,10 @@ export default function Financas() {
                     <td>
                       <span className="row-actions">
                         <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
-                          ✏️
+                          <PencilIcon />
                         </button>
                         <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
-                          🗑️
+                          <TrashIcon />
                         </button>
                       </span>
                     </td>

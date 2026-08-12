@@ -1,3 +1,5 @@
+import { todayISO, isoDaysAgo } from './dates'
+
 export const PERIOD_PRESETS = [
   { key: 'dia', label: 'Dia' },
   { key: 'semana', label: 'Semana' },
@@ -5,16 +7,6 @@ export const PERIOD_PRESETS = [
   { key: 'ano', label: 'Ano' },
   { key: 'custom', label: 'Entre datas' },
 ]
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
-
-function isoDaysAgo(days) {
-  const d = new Date()
-  d.setDate(d.getDate() - days)
-  return d.toISOString().slice(0, 10)
-}
 
 export function resolvePeriodRange(preset, { date, start, end } = {}) {
   const today = todayISO()

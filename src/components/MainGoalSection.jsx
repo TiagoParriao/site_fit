@@ -2,16 +2,13 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import MainGoalCard from './MainGoalCard'
+import { todayISO } from '../lib/dates'
 
 function statusOf(c) {
   const hoje = todayISO()
   if (hoje < c.data_inicio) return 'Ainda não começou'
   if (hoje > c.data_fim) return 'Concluído'
   return 'Em andamento'
-}
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
 }
 
 export default function MainGoalSection({ group }) {

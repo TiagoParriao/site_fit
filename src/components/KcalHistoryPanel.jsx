@@ -4,10 +4,7 @@ import { fetchGroupKcalHistory } from '../lib/kcalHistory'
 import { colorForUser } from '../lib/avatarColor'
 import PeriodSelector from './PeriodSelector'
 import KcalHistoryChart from './KcalHistoryChart'
-
-function todayISO() {
-  return new Date().toISOString().slice(0, 10)
-}
+import { todayISO } from '../lib/dates'
 
 export default function KcalHistoryPanel({ group, members }) {
   const [preset, setPreset] = useState('semana')
