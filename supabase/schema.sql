@@ -480,3 +480,41 @@ create policy "finance_subscriptions_update_self" on public.finance_subscription
 
 create policy "finance_subscriptions_delete_self" on public.finance_subscriptions
   for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: Metas por categoria ============
+-- Reserva um valor por categoria de despesa no mês (ex: Mercado), acompanhado
+-- separado da meta geral do mês.
+
+create table if not exists public.finance_category_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  mes_ano date not null,
+  categoria text not null,
+  valor_meta numeric not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, mes_ano, categoria)
+);
+
+alter table public.finance_category_goals enable row level security;
+
+create policy "finance_category_goals_select_self" on public.finance_category_goals
+  for select using (user_id = auth.uid());
+
+create policy "finance_category_goals_insert_self" on public.finance_category_goals
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_category_goals_update_self" on public.finance_category_goals
+  for update using (user_id = auth.uid());
+
+create policy "finance_category_goals_delete_self" on public.finance_category_goals
+  for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: evita duplicar lançamento de assinatura ============
+-- Sem isso, duas chamadas concorrentes de materializeSubscriptions (ex: React
+-- StrictMode remontando o componente) podiam ambas ver "ainda não existe" e
+-- inserir o mesmo lançamento duas vezes. Com o índice único, a segunda vira
+-- no-op (ON CONFLICT DO NOTHING) em vez de duplicar.
+
+create unique index if not exists finance_logs_subscription_data_unique
+  on public.finance_logs (subscription_id, data)
+  where subscription_id is not null;

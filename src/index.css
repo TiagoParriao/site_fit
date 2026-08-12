@@ -831,6 +831,30 @@ button:disabled {
   padding: 6px 12px;
 }
 
+.finance-category-goals {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finance-category-goal-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.finance-category-goal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 /* Weight diff badge */
 
 .weight-diff {

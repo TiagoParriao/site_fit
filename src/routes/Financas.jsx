@@ -46,6 +46,11 @@ export default function Financas() {
   const [editingMeta, setEditingMeta] = useState(false)
   const [novaMeta, setNovaMeta] = useState('')
 
+  const [categoryGoals, setCategoryGoals] = useState([])
+  const [novaCategoriaMeta, setNovaCategoriaMeta] = useState(DESPESA_CATEGORIES[0].key)
+  const [novoValorCategoriaMeta, setNovoValorCategoriaMeta] = useState('')
+  const [editingCategoryGoalId, setEditingCategoryGoalId] = useState(null)
+
   const [editingSaldo, setEditingSaldo] = useState(false)
   const [novoSaldo, setNovoSaldo] = useState('')
 
@@ -97,16 +102,18 @@ export default function Financas() {
 
     await materializeSubscriptions(supabase, user.id, subs, mesAtual)
 
-    const [logsRes, goalRes, balanceRes, incomeRes] = await Promise.all([
+    const [logsRes, goalRes, balanceRes, incomeRes, categoryGoalsRes] = await Promise.all([
       supabase.from('finance_logs').select('*').eq('user_id', user.id).order('data', { ascending: false }),
       supabase.from('finance_goals').select('*').eq('user_id', user.id).eq('mes_ano', mesAtual).maybeSingle(),
       supabase.from('finance_balances').select('*').eq('user_id', user.id).maybeSingle(),
       supabase.from('finance_income').select('*').eq('user_id', user.id).eq('mes_ano', mesAtual).maybeSingle(),
+      supabase.from('finance_category_goals').select('*').eq('user_id', user.id).eq('mes_ano', mesAtual),
     ])
     if (logsRes.data) setLogs(logsRes.data)
     if (goalRes.data) setGoal(goalRes.data)
     if (balanceRes.data) setBalance(balanceRes.data)
     if (incomeRes.data) setIncome(incomeRes.data)
+    setCategoryGoals(categoryGoalsRes.data ?? [])
     setLoading(false)
   }, [user.id, mesAtual])
 
@@ -222,6 +229,38 @@ export default function Financas() {
       return
     }
     setEditingMeta(false)
+    load()
+  }
+
+  function startEditCategoryGoal(cg) {
+    setEditingCategoryGoalId(cg.id)
+    setNovaCategoriaMeta(cg.categoria)
+    setNovoValorCategoriaMeta(String(cg.valor_meta))
+  }
+
+  function cancelEditCategoryGoal() {
+    setEditingCategoryGoalId(null)
+    setNovaCategoriaMeta(DESPESA_CATEGORIES[0].key)
+    setNovoValorCategoriaMeta('')
+  }
+
+  async function handleSetCategoryGoal(e) {
+    e.preventDefault()
+    setError('')
+    const { error } = await supabase.from('finance_category_goals').upsert(
+      { user_id: user.id, mes_ano: mesAtual, categoria: novaCategoriaMeta, valor_meta: Number(novoValorCategoriaMeta) },
+      { onConflict: 'user_id,mes_ano,categoria' }
+    )
+    if (error) {
+      setError(error.message)
+      return
+    }
+    cancelEditCategoryGoal()
+    load()
+  }
+
+  async function handleDeleteCategoryGoal(id) {
+    await supabase.from('finance_category_goals').delete().eq('id', id)
     load()
   }
 
@@ -573,6 +612,66 @@ export default function Financas() {
             </ul>
           </>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Metas por categoria</h2>
+        <p className="empty-state">
+          Reserve um valor por categoria (ex: Mercado) pra acompanhar separado do resto do gasto diário.
+        </p>
+
+        {categoryGoals.length > 0 && (
+          <div className="finance-category-goals">
+            {categoryGoals.map((cg) => {
+              const gastoCategoria = gastoPorCategoria.find((g) => g.categoria === cg.categoria)?.total ?? 0
+              return (
+                <div key={cg.id} className="finance-category-goal-item">
+                  <div className="finance-category-goal-header">
+                    <span>{categoryLabel('despesa', cg.categoria)}</span>
+                    <span className="row-actions">
+                      <button className="icon-button" title="editar" onClick={() => startEditCategoryGoal(cg)}>
+                        <PencilIcon />
+                      </button>
+                      <button className="icon-button" title="remover" onClick={() => handleDeleteCategoryGoal(cg.id)}>
+                        <TrashIcon />
+                      </button>
+                    </span>
+                  </div>
+                  <FinanceProgressBar gasto={gastoCategoria} meta={Number(cg.valor_meta)} />
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        <form className="form-actions" onSubmit={handleSetCategoryGoal}>
+          <label>
+            Categoria
+            <select value={novaCategoriaMeta} onChange={(e) => setNovaCategoriaMeta(e.target.value)}>
+              {DESPESA_CATEGORIES.map((c) => (
+                <option key={c.key} value={c.key}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Meta do mês (R$)
+            <input
+              type="number"
+              step="0.01"
+              value={novoValorCategoriaMeta}
+              onChange={(e) => setNovoValorCategoriaMeta(e.target.value)}
+              required
+            />
+          </label>
+          <button type="submit">{editingCategoryGoalId ? 'Salvar' : 'Adicionar meta'}</button>
+          {editingCategoryGoalId && (
+            <button type="button" className="link-button" onClick={cancelEditCategoryGoal}>
+              Cancelar
+            </button>
+          )}
+        </form>
       </div>
 
       <div className="card">
