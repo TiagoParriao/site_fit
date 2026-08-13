@@ -4,8 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import MainGoalSection from '../components/MainGoalSection'
 import KcalHistoryPanel from '../components/KcalHistoryPanel'
-import CaloriesSection from '../components/CaloriesSection'
-import ExerciseSection from '../components/ExerciseSection'
+import TrilhaSection from '../components/TrilhaSection'
 
 export default function Dashboard() {
   const { user, profile } = useAuth()
@@ -67,9 +66,7 @@ export default function Dashboard() {
 
       {group && <KcalHistoryPanel group={group} members={members} />}
 
-      <CaloriesSection />
-
-      <ExerciseSection />
+      <TrilhaSection />
     </div>
   )
 }

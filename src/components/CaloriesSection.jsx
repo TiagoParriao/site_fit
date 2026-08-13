@@ -43,6 +43,7 @@ export default function CaloriesSection() {
   const [mealStart, setMealStart] = useState(todayISO())
   const [mealEnd, setMealEnd] = useState(todayISO())
   const [mealAverages, setMealAverages] = useState({ rows: [] })
+  const [showEntries, setShowEntries] = useState(false)
 
   const isToday = data === todayISO()
 
@@ -185,8 +186,7 @@ export default function CaloriesSection() {
   }, [saldo])
 
   return (
-    <div className="card">
-      <h2>Calorias</h2>
+    <>
       {error && <p className="error">{error}</p>}
 
       <label>
@@ -267,74 +267,91 @@ export default function CaloriesSection() {
       ) : entries.length === 0 ? (
         <p className="empty-state">Nada registrado ainda.</p>
       ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Hora</th>
-              <th>Refeição</th>
-              <th>Kcal</th>
-              <th>Descrição</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((e) =>
-              editingId === e.id ? (
-                <tr key={e.id}>
-                  <td colSpan={5}>
-                    <div className="inline-edit-row">
-                      <label>
-                        Hora
-                        <input type="time" value={editHora} onChange={(ev) => setEditHora(ev.target.value)} required />
-                      </label>
-                      <label>
-                        Refeição
-                        <select value={editTipoRefeicao} onChange={(ev) => setEditTipoRefeicao(ev.target.value)}>
-                          {MEAL_TYPES.map((t) => (
-                            <option key={t.key} value={t.key}>
-                              {t.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label>
-                        Kcal
-                        <input type="number" value={editKcal} onChange={(ev) => setEditKcal(ev.target.value)} required />
-                      </label>
-                      <label>
-                        Descrição (opcional)
-                        <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
-                      </label>
-                      <button type="button" onClick={() => handleSaveEdit(e.id)}>
-                        Salvar
-                      </button>
-                      <button type="button" className="link-button" onClick={() => setEditingId(null)}>
-                        Cancelar
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <button type="button" className="link-button" onClick={() => setShowEntries((v) => !v)}>
+            {showEntries ? 'Ocultar lançamentos' : `Ver lançamentos (${entries.length})`}
+          </button>
+          {showEntries && (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Hora</th>
+                  <th>Refeição</th>
+                  <th>Kcal</th>
+                  <th>Descrição</th>
+                  <th></th>
                 </tr>
-              ) : (
-                <tr key={e.id}>
-                  <td data-label="Hora">{e.hora?.slice(0, 5)}</td>
-                  <td data-label="Refeição">{mealTypeLabel(e.tipo_refeicao)}</td>
-                  <td data-label="Kcal">{e.kcal}</td>
-                  <td data-label="Descrição">{e.descricao || '-'}</td>
-                  <td>
-                    <span className="row-actions">
-                      <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
-                        <PencilIcon />
-                      </button>
-                      <button className="icon-button" title="remover" onClick={() => handleDelete(e.id)}>
-                        <TrashIcon />
-                      </button>
-                    </span>
-                  </td>
-                </tr>
-              )
-            )}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+                {entries.map((e) =>
+                  editingId === e.id ? (
+                    <tr key={e.id}>
+                      <td colSpan={5}>
+                        <div className="inline-edit-row">
+                          <label>
+                            Hora
+                            <input
+                              type="time"
+                              value={editHora}
+                              onChange={(ev) => setEditHora(ev.target.value)}
+                              required
+                            />
+                          </label>
+                          <label>
+                            Refeição
+                            <select value={editTipoRefeicao} onChange={(ev) => setEditTipoRefeicao(ev.target.value)}>
+                              {MEAL_TYPES.map((t) => (
+                                <option key={t.key} value={t.key}>
+                                  {t.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            Kcal
+                            <input
+                              type="number"
+                              value={editKcal}
+                              onChange={(ev) => setEditKcal(ev.target.value)}
+                              required
+                            />
+                          </label>
+                          <label>
+                            Descrição (opcional)
+                            <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
+                          </label>
+                          <button type="button" onClick={() => handleSaveEdit(e.id)}>
+                            Salvar
+                          </button>
+                          <button type="button" className="link-button" onClick={() => setEditingId(null)}>
+                            Cancelar
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr key={e.id}>
+                      <td data-label="Hora">{e.hora?.slice(0, 5)}</td>
+                      <td data-label="Refeição">{mealTypeLabel(e.tipo_refeicao)}</td>
+                      <td data-label="Kcal">{e.kcal}</td>
+                      <td data-label="Descrição">{e.descricao || '-'}</td>
+                      <td>
+                        <span className="row-actions">
+                          <button className="icon-button" title="editar" onClick={() => startEdit(e)}>
+                            <PencilIcon />
+                          </button>
+                          <button className="icon-button" title="remover" onClick={() => handleDelete(e.id)}>
+                            <TrashIcon />
+                          </button>
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
       <h3>Média por refeição</h3>
@@ -370,6 +387,6 @@ export default function CaloriesSection() {
           </tbody>
         </table>
       )}
-    </div>
+    </>
   )
 }

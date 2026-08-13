@@ -121,6 +121,29 @@ a {
   color: var(--text-muted);
 }
 
+.section-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.section-tab {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.section-tab.active {
+  background: rgba(108, 92, 231, 0.1);
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
