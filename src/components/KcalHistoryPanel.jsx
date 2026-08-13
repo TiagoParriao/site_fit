@@ -86,54 +86,62 @@ export default function KcalHistoryPanel({ group, members }) {
       ) : (
         <>
           <KcalHistoryChart dates={result.chartDates} series={result.chartSeries} />
-          <div className="chart-legend">
-            {result.rows.map((r) => (
-              <span key={r.user_id}>
-                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
-                {r.nome} — consumiu {r.totalPeriodo} kcal / gastou {r.totalGastoPeriodo} kcal
-              </span>
-            ))}
-          </div>
 
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Membro</th>
-                <th>Meta diária</th>
-                <th>Kcal consumidas</th>
-                <th>Kcal gastas</th>
-                <th>Dias registrados</th>
-                <th>Dias acima da meta</th>
-              </tr>
-            </thead>
-            <tbody>
+          <input type="checkbox" id="kcal-details-toggle" className="details-toggle-input" />
+          <label htmlFor="kcal-details-toggle" className="details-toggle-label link-button">
+            <span className="details-toggle-text-show">Ver detalhes por membro</span>
+            <span className="details-toggle-text-hide">Ocultar detalhes por membro</span>
+          </label>
+          <div className="details-toggle-content">
+            <div className="chart-legend">
               {result.rows.map((r) => (
-                <tr key={r.user_id}>
-                  <td data-label="Membro">{r.nome}</td>
-                  <td data-label="Meta diária">{r.meta} kcal</td>
-                  <td data-label="Kcal consumidas">{r.totalPeriodo} kcal</td>
-                  <td data-label="Kcal gastas">{r.totalGastoPeriodo} kcal</td>
-                  <td data-label="Dias registrados">{r.diasRegistrados}</td>
-                  <td data-label="Dias acima da meta">{r.diasEstourados}</td>
-                </tr>
+                <span key={r.user_id}>
+                  <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
+                  {r.nome} — consumiu {r.totalPeriodo} kcal / gastou {r.totalGastoPeriodo} kcal
+                </span>
               ))}
-            </tbody>
-          </table>
+            </div>
 
-          {result.rows.some((r) => r.diasEstouradosLista.length > 0) && (
-            <ul className="overbudget-list">
-              {result.rows.flatMap((r) =>
-                r.diasEstouradosLista.map((d) => (
-                  <li key={`${r.user_id}-${d.data}`} className="overbudget-item">
-                    <span>
-                      {r.nome} — {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR')}
-                    </span>
-                    <span>+{d.diff} kcal</span>
-                  </li>
-                ))
-              )}
-            </ul>
-          )}
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Membro</th>
+                  <th>Meta diária</th>
+                  <th>Kcal consumidas</th>
+                  <th>Kcal gastas</th>
+                  <th>Dias registrados</th>
+                  <th>Dias acima da meta</th>
+                </tr>
+              </thead>
+              <tbody>
+                {result.rows.map((r) => (
+                  <tr key={r.user_id}>
+                    <td data-label="Membro">{r.nome}</td>
+                    <td data-label="Meta diária">{r.meta} kcal</td>
+                    <td data-label="Kcal consumidas">{r.totalPeriodo} kcal</td>
+                    <td data-label="Kcal gastas">{r.totalGastoPeriodo} kcal</td>
+                    <td data-label="Dias registrados">{r.diasRegistrados}</td>
+                    <td data-label="Dias acima da meta">{r.diasEstourados}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {result.rows.some((r) => r.diasEstouradosLista.length > 0) && (
+              <ul className="overbudget-list">
+                {result.rows.flatMap((r) =>
+                  r.diasEstouradosLista.map((d) => (
+                    <li key={`${r.user_id}-${d.data}`} className="overbudget-item">
+                      <span>
+                        {r.nome} — {new Date(`${d.data}T00:00:00`).toLocaleDateString('pt-BR')}
+                      </span>
+                      <span>+{d.diff} kcal</span>
+                    </li>
+                  ))
+                )}
+              </ul>
+            )}
+          </div>
 
           <h3>Kcal gastas em exercício</h3>
           <KcalHistoryChart

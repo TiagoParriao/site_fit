@@ -621,6 +621,43 @@ button:disabled {
   margin-top: 4px;
 }
 
+/* Detalhes colapsáveis: escondidos só no celular, sempre abertos no desktop */
+
+.details-toggle-input {
+  display: none;
+}
+
+.details-toggle-label {
+  display: none;
+}
+
+.details-toggle-text-hide {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .details-toggle-label {
+    display: inline-block;
+    margin-top: 8px;
+  }
+
+  .details-toggle-content {
+    display: none;
+  }
+
+  .details-toggle-input:checked ~ .details-toggle-content {
+    display: block;
+  }
+
+  .details-toggle-input:checked ~ .details-toggle-label .details-toggle-text-show {
+    display: none;
+  }
+
+  .details-toggle-input:checked ~ .details-toggle-label .details-toggle-text-hide {
+    display: inline;
+  }
+}
+
 .chart-legend-swatch {
   display: inline-block;
   width: 10px;
