@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import FinanceHistoryChart from '../components/FinanceHistoryChart'
 import { todayISO } from '../lib/dates'
-import { PencilIcon, TrashIcon } from '../components/icons'
+import { PencilIcon, TrashIcon, UndoIcon } from '../components/icons'
 
 const FORMAS = [
   { key: 'debito', label: 'Conta (débito/pix/dinheiro)' },
@@ -128,14 +128,19 @@ export default function Financas() {
     if (abertos.length === 0) return
     const total = abertos.reduce((sum, l) => sum + Number(l.valor), 0)
 
-    const { error: insertError } = await supabase.from('finance_logs').insert({
-      user_id: user.id,
-      tipo: 'despesa',
-      valor: total,
-      forma_pagamento: 'debito',
-      descricao: 'Pagamento da fatura do cartão',
-      data: todayISO(),
-    })
+    const { data: pagamento, error: insertError } = await supabase
+      .from('finance_logs')
+      .insert({
+        user_id: user.id,
+        tipo: 'despesa',
+        valor: total,
+        forma_pagamento: 'debito',
+        descricao: 'Pagamento da fatura do cartão',
+        data: todayISO(),
+        eh_pagamento_fatura: true,
+      })
+      .select()
+      .single()
     if (insertError) {
       setError(insertError.message)
       return
@@ -143,10 +148,28 @@ export default function Financas() {
 
     const { error: updateError } = await supabase
       .from('finance_logs')
-      .update({ fatura_paga: true })
+      .update({ fatura_paga: true, pagamento_id: pagamento.id })
       .in('id', abertos.map((l) => l.id))
     if (updateError) {
       setError(updateError.message)
+      return
+    }
+    load()
+  }
+
+  async function handleReverterPagamento(pagamentoId) {
+    setError('')
+    const { error: updateError } = await supabase
+      .from('finance_logs')
+      .update({ fatura_paga: false, pagamento_id: null })
+      .eq('pagamento_id', pagamentoId)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    const { error: deleteError } = await supabase.from('finance_logs').delete().eq('id', pagamentoId)
+    if (deleteError) {
+      setError(deleteError.message)
       return
     }
     load()
@@ -177,6 +200,13 @@ export default function Financas() {
   )
   const faturaAberta = useMemo(() => itensFaturaAberta.reduce((sum, l) => sum + Number(l.valor), 0), [itensFaturaAberta])
   const saldoDepoisDaFatura = saldoAtual - faturaAberta
+
+  const ultimoPagamento = useMemo(() => {
+    const pagamentos = logs
+      .filter((l) => l.eh_pagamento_fatura)
+      .sort((a, b) => (a.data < b.data ? 1 : -1))
+    return pagamentos[0] ?? null
+  }, [logs])
 
   const logsConta = useMemo(
     () =>
@@ -279,12 +309,24 @@ export default function Financas() {
         </td>
         <td>
           <span className="row-actions">
-            <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
-              <PencilIcon />
-            </button>
-            <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
-              <TrashIcon />
-            </button>
+            {log.eh_pagamento_fatura ? (
+              <button
+                className="icon-button"
+                title="reverter pagamento da fatura"
+                onClick={() => handleReverterPagamento(log.id)}
+              >
+                <UndoIcon />
+              </button>
+            ) : (
+              <>
+                <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
+                  <PencilIcon />
+                </button>
+                <button className="icon-button" title="remover" onClick={() => handleDelete(log.id)}>
+                  <TrashIcon />
+                </button>
+              </>
+            )}
           </span>
         </td>
       </tr>
@@ -369,6 +411,20 @@ export default function Financas() {
           <button type="button" onClick={handlePagarFatura}>
             Pagar fatura agora
           </button>
+        )}
+
+        {ultimoPagamento && (
+          <p className="finance-invoice-note">
+            Último pagamento: R$ {Number(ultimoPagamento.valor).toFixed(2)} em{' '}
+            {new Date(`${ultimoPagamento.data}T00:00:00`).toLocaleDateString('pt-BR')}.{' '}
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => handleReverterPagamento(ultimoPagamento.id)}
+            >
+              Reverter pagamento
+            </button>
+          </p>
         )}
       </div>
 

@@ -531,3 +531,12 @@ create unique index if not exists finance_logs_subscription_data_unique
 
 alter table public.finance_logs alter column categoria drop not null;
 alter table public.finance_logs add column if not exists fatura_paga boolean not null default false;
+
+-- ============ MIGRAÇÃO: reverter pagamento da fatura ============
+-- eh_pagamento_fatura marca o lançamento de débito criado por "Pagar fatura
+-- agora". pagamento_id, nas saídas do cartão, aponta pra esse lançamento —
+-- é o que permite desfazer com segurança: apaga o pagamento e reabre exatamente
+-- as compras que ele tinha fechado, sem adivinhar por data/descrição.
+
+alter table public.finance_logs add column if not exists eh_pagamento_fatura boolean not null default false;
+alter table public.finance_logs add column if not exists pagamento_id uuid references public.finance_logs (id) on delete set null;
