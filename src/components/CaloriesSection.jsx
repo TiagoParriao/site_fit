@@ -44,6 +44,7 @@ export default function CaloriesSection() {
   const [mealEnd, setMealEnd] = useState(todayISO())
   const [mealAverages, setMealAverages] = useState({ rows: [] })
   const [showEntries, setShowEntries] = useState(false)
+  const [showAverages, setShowAverages] = useState(false)
 
   const isToday = data === todayISO()
 
@@ -354,38 +355,45 @@ export default function CaloriesSection() {
         </>
       )}
 
-      <h3>Média por refeição</h3>
-      <PeriodSelector
-        preset={mealPreset}
-        onPresetChange={setMealPreset}
-        date={mealDate}
-        onDateChange={setMealDate}
-        start={mealStart}
-        onStartChange={setMealStart}
-        end={mealEnd}
-        onEndChange={setMealEnd}
-      />
-      {mealAverages.rows.length === 0 ? (
-        <p className="empty-state">Sem registros suficientes nesse período.</p>
-      ) : (
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Refeição</th>
-              <th>Média</th>
-              <th>Registros</th>
-            </tr>
-          </thead>
-          <tbody>
-            {mealAverages.rows.map((r) => (
-              <tr key={r.key}>
-                <td data-label="Refeição">{r.label}</td>
-                <td data-label="Média">{r.media} kcal</td>
-                <td data-label="Registros">{r.registros}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <button type="button" className="link-button" onClick={() => setShowAverages((v) => !v)}>
+        {showAverages ? 'Ocultar média por refeição' : 'Ver média por refeição'}
+      </button>
+      {showAverages && (
+        <>
+          <h3>Média por refeição</h3>
+          <PeriodSelector
+            preset={mealPreset}
+            onPresetChange={setMealPreset}
+            date={mealDate}
+            onDateChange={setMealDate}
+            start={mealStart}
+            onStartChange={setMealStart}
+            end={mealEnd}
+            onEndChange={setMealEnd}
+          />
+          {mealAverages.rows.length === 0 ? (
+            <p className="empty-state">Sem registros suficientes nesse período.</p>
+          ) : (
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Refeição</th>
+                  <th>Média</th>
+                  <th>Registros</th>
+                </tr>
+              </thead>
+              <tbody>
+                {mealAverages.rows.map((r) => (
+                  <tr key={r.key}>
+                    <td data-label="Refeição">{r.label}</td>
+                    <td data-label="Média">{r.media} kcal</td>
+                    <td data-label="Registros">{r.registros}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
     </>
   )
