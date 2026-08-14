@@ -58,12 +58,15 @@ export async function fetchGroupMetabolicHistory(supabase, members, preset, opts
     .map((m) => {
       const idade = calcularIdade(m.data_nascimento, end)
       const tmb = calcularTMB({ sexo: m.sexo, pesoKg: pesoPorUsuario[m.user_id], alturaCm: Number(m.altura_cm), idade })
+      let totalGet = 0
       const values = chartDates.map((d) => {
         const consumido = consumidoPorUsuarioDia[m.user_id]?.[d] ?? 0
         const exercicio = exercicioPorUsuarioDia[m.user_id]?.[d] ?? 0
-        return Math.round(calcularGetDia(tmb, exercicio) - consumido)
+        const getDia = calcularGetDia(tmb, exercicio)
+        totalGet += getDia
+        return Math.round(getDia - consumido)
       })
-      return { user_id: m.user_id, nome: m.nome, cor: m.cor, values }
+      return { user_id: m.user_id, nome: m.nome, cor: m.cor, values, totalGet: Math.round(totalGet) }
     })
 
   const semPeso = elegiveis.filter((m) => pesoPorUsuario[m.user_id] == null).map((m) => m.nome)

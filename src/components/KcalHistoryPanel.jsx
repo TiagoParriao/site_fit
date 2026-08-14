@@ -229,20 +229,20 @@ export default function KcalHistoryPanel({ group, members }) {
                   {metabolicResult.membrosSemDados.join(', ')} ainda não {metabolicResult.membrosSemDados.length > 1 ? 'definiram' : 'definiu'} sexo, peso ou altura suficientes pra calcular a TMB.
                 </p>
               )}
-              {personalMetabolic && (
-                <>
-                  {personalMetabolic.dias.length > 0 && (
-                    <p className={`kcal-saldo${personalMetabolic.acumulado < 0 ? ' negative' : ''}`}>
-                      Últimos {personalMetabolic.dias.length} dias (até ontem):{' '}
-                      {personalMetabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
-                      {Math.abs(Math.round(personalMetabolic.acumulado))} kcal
-                      {personalMetabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
-                    </p>
-                  )}
-                  <p className="kcal-saldo">
-                    Hoje (em andamento): gasto estimado até agora é {Math.round(personalMetabolic.getHoje)} kcal
+              {(() => {
+                const minhaSerie = metabolicResult.chartSeries.find((s) => s.user_id === user.id)
+                if (!minhaSerie || minhaSerie.values.length === 0) return null
+                const acumulado = minhaSerie.values.reduce((sum, v) => sum + v, 0)
+                return (
+                  <p className={`kcal-saldo${acumulado < 0 ? ' negative' : ''}`}>
+                    {minhaSerie.nome} — gasto calórico de {minhaSerie.totalGet} kcal,{' '}
+                    {acumulado >= 0 ? 'acumulou' : 'ultrapassou em'} {Math.abs(Math.round(acumulado))} kcal
+                    {acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
                   </p>
-                </>
+                )
+              })()}
+              {personalMetabolic && (
+                <p className="kcal-saldo">Gasto estimado para hoje será {Math.round(personalMetabolic.getHoje)} kcal</p>
               )}
             </>
           )}
