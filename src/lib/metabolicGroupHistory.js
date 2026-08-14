@@ -21,7 +21,9 @@ export async function fetchGroupMetabolicHistory(supabase, members, preset, opts
 
   if (userIds.length === 0) return { start, end, chartDates: [], chartSeries: [], membrosSemDados }
 
-  const [{ data: pesoRows }, { data: calRows }, { data: exRows }] = await Promise.all([
+  const hoje = todayISO()
+
+  const [{ data: pesoRows }, { data: calRows }, { data: exRows }, { data: exHojeRows }] = await Promise.all([
     supabase
       .from('weight_logs')
       .select('user_id, peso_kg, data')
@@ -30,7 +32,13 @@ export async function fetchGroupMetabolicHistory(supabase, members, preset, opts
       .order('data', { ascending: false }),
     supabase.from('calorie_logs').select('user_id, data, kcal').in('user_id', userIds).gte('data', start).lte('data', end),
     supabase.from('exercise_logs').select('user_id, data, kcal_gasta').in('user_id', userIds).gte('data', start).lte('data', end),
+    supabase.from('exercise_logs').select('user_id, kcal_gasta').in('user_id', userIds).eq('data', hoje),
   ])
+
+  const exercicioHojePorUsuario = {}
+  for (const row of exHojeRows ?? []) {
+    exercicioHojePorUsuario[row.user_id] = (exercicioHojePorUsuario[row.user_id] ?? 0) + row.kcal_gasta
+  }
 
   const pesoPorUsuario = {}
   for (const row of pesoRows ?? []) {
@@ -66,7 +74,8 @@ export async function fetchGroupMetabolicHistory(supabase, members, preset, opts
         totalGet += getDia
         return Math.round(getDia - consumido)
       })
-      return { user_id: m.user_id, nome: m.nome, cor: m.cor, values, totalGet: Math.round(totalGet) }
+      const getHoje = calcularGetDia(tmb, exercicioHojePorUsuario[m.user_id] ?? 0)
+      return { user_id: m.user_id, nome: m.nome, cor: m.cor, values, totalGet: Math.round(totalGet), getHoje }
     })
 
   const semPeso = elegiveis.filter((m) => pesoPorUsuario[m.user_id] == null).map((m) => m.nome)
