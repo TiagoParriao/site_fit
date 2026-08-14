@@ -1,7 +1,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
+import { useAuth } from '../context/AuthContext'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
 import { fetchGroupMetabolicHistory } from '../lib/metabolicGroupHistory'
+import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
 import { colorForUser } from '../lib/avatarColor'
 import PeriodSelector from './PeriodSelector'
 import KcalHistoryChart from './KcalHistoryChart'
@@ -9,6 +11,7 @@ import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { todayISO } from '../lib/dates'
 
 export default function KcalHistoryPanel({ group, members }) {
+  const { user, profile } = useAuth()
   const [preset, setPreset] = useState('semana')
   const [date, setDate] = useState(todayISO())
   const [start, setStart] = useState(todayISO())
@@ -25,6 +28,7 @@ export default function KcalHistoryPanel({ group, members }) {
   const [metabolicStart, setMetabolicStart] = useState(todayISO())
   const [metabolicEnd, setMetabolicEnd] = useState(todayISO())
   const [metabolicResult, setMetabolicResult] = useState({ chartDates: [], chartSeries: [], membrosSemDados: [] })
+  const [personalMetabolic, setPersonalMetabolic] = useState(null)
 
   useEffect(() => {
     setTituloAtual(group?.kcal_titulo || 'Histórico de calorias')
@@ -51,6 +55,15 @@ export default function KcalHistoryPanel({ group, members }) {
   useEffect(() => {
     if (showMetabolic) loadMetabolic()
   }, [showMetabolic, loadMetabolic])
+
+  const loadPersonalMetabolic = useCallback(async () => {
+    const data = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
+    setPersonalMetabolic(data)
+  }, [user.id, profile])
+
+  useEffect(() => {
+    if (showMetabolic) loadPersonalMetabolic()
+  }, [showMetabolic, loadPersonalMetabolic])
 
   async function handleSaveTitle(e) {
     e.preventDefault()
@@ -215,6 +228,18 @@ export default function KcalHistoryPanel({ group, members }) {
                 <p className="empty-state">
                   {metabolicResult.membrosSemDados.join(', ')} ainda não {metabolicResult.membrosSemDados.length > 1 ? 'definiram' : 'definiu'} sexo, peso ou altura suficientes pra calcular a TMB.
                 </p>
+              )}
+              {personalMetabolic && (
+                <>
+                  <p className={`kcal-saldo${personalMetabolic.acumulado < 0 ? ' negative' : ''}`}>
+                    Últimos 7 dias (até ontem): {personalMetabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
+                    {Math.abs(Math.round(personalMetabolic.acumulado))} kcal
+                    {personalMetabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
+                  </p>
+                  <p className="kcal-saldo">
+                    Hoje (em andamento): gasto estimado até agora é {Math.round(personalMetabolic.getHoje)} kcal
+                  </p>
+                </>
               )}
             </>
           )}

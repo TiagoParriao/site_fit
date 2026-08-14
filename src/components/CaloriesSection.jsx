@@ -7,7 +7,6 @@ import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { fetchMealTypeAverages } from '../lib/mealAverages'
 import { todayISO, addDaysISO } from '../lib/dates'
 import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
-import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { PencilIcon, TrashIcon } from './icons'
 
 function yesterdayOf(dataISO) {
@@ -249,32 +248,11 @@ export default function CaloriesSection() {
         </button>
       )}
 
-      {metabolic ? (
-        <div className="metabolic-balance">
-          <h3>Baseado na sua taxa metabólica</h3>
-          <MetabolicHistoryChart
-            dates={metabolic.dias.map((d) => d.data)}
-            series={[
-              {
-                user_id: user.id,
-                nome: profile?.nome,
-                cor: profile?.cor,
-                values: metabolic.dias.map((d) => Math.round(d.saldo)),
-              },
-            ]}
-          />
-          <p className={`kcal-saldo${metabolic.acumulado < 0 ? ' negative' : ''}`}>
-            Últimos 7 dias (até ontem): {metabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
-            {Math.abs(Math.round(metabolic.acumulado))} kcal
-            {metabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
-          </p>
-          <p className="kcal-saldo">Hoje (em andamento): gasto estimado até agora é {Math.round(metabolic.getHoje)} kcal</p>
-        </div>
-      ) : (
+      {!metabolic && (
         <div className="metabolic-balance">
           <p className="empty-state">
-            Defina seu sexo pra calcular sua taxa metabólica basal e ver quanto você deixou de consumir com base no
-            que realmente gastou (não só na meta).
+            Defina seu sexo pra calcular sua taxa metabólica basal — o saldo baseado nela aparece lá em cima, no
+            histórico do grupo, em "Ver saldo por TMB de cada membro".
           </p>
           {editingSexo ? (
             <form onSubmit={handleSetSexo} className="form-actions">
