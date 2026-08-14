@@ -1,4 +1,5 @@
 import { resolvePeriodRange } from './periods'
+import { todayISO, addDaysISO } from './dates'
 import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 
 // Saldo diário (TMB + exercício do dia − consumido) de cada membro do grupo,
@@ -6,7 +7,13 @@ import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 // definido, ou sem nenhum peso lançado até o fim do período, ficam de fora
 // (não dá pra calcular TMB sem esses dados) e voltam em `membrosSemDados`.
 export async function fetchGroupMetabolicHistory(supabase, members, preset, opts) {
-  const { start, end } = resolvePeriodRange(preset, opts)
+  let { start, end } = resolvePeriodRange(preset, opts)
+  // Hoje ainda não fechou, então por padrão a janela termina ontem — a
+  // exceção é o preset "dia", onde a pessoa escolheu aquela data explicitamente.
+  if (preset !== 'dia' && end === todayISO()) {
+    start = addDaysISO(start, -1)
+    end = addDaysISO(end, -1)
+  }
 
   const elegiveis = members.filter((m) => m.sexo && m.altura_cm && m.data_nascimento)
   const userIds = elegiveis.map((m) => m.user_id)

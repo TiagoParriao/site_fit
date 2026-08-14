@@ -1,31 +1,33 @@
 import { todayISO, addDaysISO } from './dates'
 import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 
-// Saldo dos 7 dias terminando na data de referência (por padrão, hoje) — mesma
-// janela usada em toda a "Semana" do app — com base na TMB real da pessoa em
-// vez da meta fixa de kcal.
-export async function fetchWeeklyMetabolicBalance(supabase, userId, profile, referenceDateISO = todayISO()) {
+// Foto fixa: 7 dias completos (terminando ontem, nunca hoje — hoje ainda não
+// acabou de ser lançado) + o GET estimado de hoje separado, pra não misturar
+// um dado "fechado" com um em andamento.
+export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
   if (!profile?.sexo || !profile?.altura_cm || !profile?.data_nascimento) return null
+
+  const hoje = todayISO()
 
   const { data: pesoRow } = await supabase
     .from('weight_logs')
     .select('peso_kg')
     .eq('user_id', userId)
-    .lte('data', referenceDateISO)
+    .lte('data', hoje)
     .order('data', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (!pesoRow) return null
 
-  const end = referenceDateISO
-  const start = addDaysISO(end, -6)
+  const ontem = addDaysISO(hoje, -1)
+  const start = addDaysISO(ontem, -6)
 
   const [{ data: caloriaRows }, { data: exercicioRows }] = await Promise.all([
-    supabase.from('calorie_logs').select('kcal, data').eq('user_id', userId).gte('data', start).lte('data', end),
-    supabase.from('exercise_logs').select('kcal_gasta, data').eq('user_id', userId).gte('data', start).lte('data', end),
+    supabase.from('calorie_logs').select('kcal, data').eq('user_id', userId).gte('data', start).lte('data', hoje),
+    supabase.from('exercise_logs').select('kcal_gasta, data').eq('user_id', userId).gte('data', start).lte('data', hoje),
   ])
 
-  const idade = calcularIdade(profile.data_nascimento, end)
+  const idade = calcularIdade(profile.data_nascimento, hoje)
   const tmb = calcularTMB({
     sexo: profile.sexo,
     pesoKg: Number(pesoRow.peso_kg),
@@ -44,19 +46,20 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile, ref
 
   const dias = []
   for (let i = 6; i >= 0; i--) {
-    const data = addDaysISO(end, -i)
+    const data = addDaysISO(ontem, -i)
     const consumido = consumidoPorDia[data] || 0
     const exercicio = exercicioPorDia[data] || 0
     const getDia = calcularGetDia(tmb, exercicio)
     dias.push({ data, consumido, exercicio, getDia, saldo: getDia - consumido })
   }
 
+  const getHoje = calcularGetDia(tmb, exercicioPorDia[hoje] || 0)
+
   return {
     tmb,
     idade,
     dias,
-    referenceDate: end,
-    saldoDia: dias[dias.length - 1].saldo,
-    acumuladoSemana: dias.reduce((sum, d) => sum + d.saldo, 0),
+    acumulado: dias.reduce((sum, d) => sum + d.saldo, 0),
+    getHoje,
   }
 }

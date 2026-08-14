@@ -6,8 +6,8 @@ import PeriodSelector from './PeriodSelector'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { fetchMealTypeAverages } from '../lib/mealAverages'
 import { todayISO, addDaysISO } from '../lib/dates'
-import { shortDateLabel } from '../lib/chartAxis'
 import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
+import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { PencilIcon, TrashIcon } from './icons'
 
 function yesterdayOf(dataISO) {
@@ -89,9 +89,9 @@ export default function CaloriesSection() {
   }, [loadYesterday])
 
   const loadMetabolic = useCallback(async () => {
-    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile, data)
+    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
     setMetabolic(result)
-  }, [user.id, profile, data])
+  }, [user.id, profile])
 
   useEffect(() => {
     loadMetabolic()
@@ -252,16 +252,23 @@ export default function CaloriesSection() {
       {metabolic ? (
         <div className="metabolic-balance">
           <h3>Baseado na sua taxa metabólica</h3>
-          <p className={`kcal-saldo${metabolic.saldoDia < 0 ? ' negative' : ''}`}>
-            {isToday ? 'Hoje' : `Em ${shortDateLabel(data)}`}:{' '}
-            {metabolic.saldoDia >= 0 ? 'deixou de consumir' : 'consumiu'}{' '}
-            {Math.abs(Math.round(metabolic.saldoDia))} kcal
+          <MetabolicHistoryChart
+            dates={metabolic.dias.map((d) => d.data)}
+            series={[
+              {
+                user_id: user.id,
+                nome: profile?.nome,
+                cor: profile?.cor,
+                values: metabolic.dias.map((d) => Math.round(d.saldo)),
+              },
+            ]}
+          />
+          <p className={`kcal-saldo${metabolic.acumulado < 0 ? ' negative' : ''}`}>
+            Últimos 7 dias (até ontem): {metabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
+            {Math.abs(Math.round(metabolic.acumulado))} kcal
+            {metabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
           </p>
-          <p className={`kcal-saldo${metabolic.acumuladoSemana < 0 ? ' negative' : ''}`}>
-            7 dias até {shortDateLabel(data)}: {metabolic.acumuladoSemana >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
-            {Math.abs(Math.round(metabolic.acumuladoSemana))} kcal
-            {metabolic.acumuladoSemana >= 0 ? ' a menos do que gastou' : ' do que gastou'}
-          </p>
+          <p className="kcal-saldo">Hoje (em andamento): gasto estimado até agora é {Math.round(metabolic.getHoje)} kcal</p>
         </div>
       ) : (
         <div className="metabolic-balance">
