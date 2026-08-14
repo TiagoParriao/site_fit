@@ -736,6 +736,19 @@ button:disabled {
   color: var(--danger);
 }
 
+.metabolic-balance {
+  background: var(--bg);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metabolic-balance h3 {
+  margin: 0;
+}
+
 /* Copiar refeição de ontem */
 
 .copy-yesterday {

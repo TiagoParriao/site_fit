@@ -540,3 +540,11 @@ alter table public.finance_logs add column if not exists fatura_paga boolean not
 
 alter table public.finance_logs add column if not exists eh_pagamento_fatura boolean not null default false;
 alter table public.finance_logs add column if not exists pagamento_id uuid references public.finance_logs (id) on delete set null;
+
+-- ============ MIGRAÇÃO: sexo (pra taxa metabólica basal) ============
+-- Usado na fórmula de Mifflin-St Jeor pra estimar quanto a pessoa deixou de
+-- consumir no dia com base no gasto real (TMB + exercício), não só na meta
+-- fixa de kcal. Peso vem do lançamento mais recente em weight_logs, altura e
+-- idade já existiam em profiles (altura_cm, data_nascimento).
+
+alter table public.profiles add column if not exists sexo text check (sexo in ('M', 'F'));

@@ -10,6 +10,7 @@ export default function Signup() {
     email: '',
     password: '',
     dataNascimento: '',
+    sexo: 'M',
     alturaCm: '',
     pesoInicial: '',
     metaKcalDiaria: '2000',
@@ -33,6 +34,7 @@ export default function Signup() {
         password: form.password,
         nome: form.nome,
         dataNascimento: form.dataNascimento,
+        sexo: form.sexo,
         alturaCm: Number(form.alturaCm),
         pesoInicial: Number(form.pesoInicial),
         metaKcalDiaria: Number(form.metaKcalDiaria),
@@ -71,6 +73,13 @@ export default function Signup() {
         <label>
           Data de nascimento
           <input type="date" value={form.dataNascimento} onChange={update('dataNascimento')} required />
+        </label>
+        <label>
+          Sexo
+          <select value={form.sexo} onChange={update('sexo')}>
+            <option value="M">Masculino</option>
+            <option value="F">Feminino</option>
+          </select>
         </label>
         <label>
           Altura (cm)

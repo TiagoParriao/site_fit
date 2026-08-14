@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
     return () => listener.subscription.unsubscribe()
   }, [loadProfile])
 
-  async function signUp({ email, password, nome, dataNascimento, alturaCm, pesoInicial, metaKcalDiaria }) {
+  async function signUp({ email, password, nome, dataNascimento, sexo, alturaCm, pesoInicial, metaKcalDiaria }) {
     const { data, error } = await supabase.auth.signUp({ email, password })
     if (error) throw error
 
@@ -45,6 +45,7 @@ export function AuthProvider({ children }) {
       id: userId,
       nome,
       data_nascimento: dataNascimento,
+      sexo,
       altura_cm: alturaCm,
       meta_kcal_diaria: metaKcalDiaria,
     })

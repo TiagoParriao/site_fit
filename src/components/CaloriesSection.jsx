@@ -6,6 +6,7 @@ import PeriodSelector from './PeriodSelector'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { fetchMealTypeAverages } from '../lib/mealAverages'
 import { todayISO, addDaysISO } from '../lib/dates'
+import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
 import { PencilIcon, TrashIcon } from './icons'
 
 function yesterdayOf(dataISO) {
@@ -46,6 +47,10 @@ export default function CaloriesSection() {
   const [showEntries, setShowEntries] = useState(false)
   const [showAverages, setShowAverages] = useState(false)
 
+  const [metabolic, setMetabolic] = useState(null)
+  const [editingSexo, setEditingSexo] = useState(false)
+  const [novoSexo, setNovoSexo] = useState('M')
+
   const isToday = data === todayISO()
 
   const load = useCallback(async () => {
@@ -82,6 +87,15 @@ export default function CaloriesSection() {
     loadYesterday()
   }, [loadYesterday])
 
+  const loadMetabolic = useCallback(async () => {
+    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
+    setMetabolic(result)
+  }, [user.id, profile])
+
+  useEffect(() => {
+    loadMetabolic()
+  }, [loadMetabolic])
+
   const loadMealAverages = useCallback(async () => {
     const result = await fetchMealTypeAverages(supabase, user.id, mealPreset, {
       date: mealDate,
@@ -102,6 +116,17 @@ export default function CaloriesSection() {
       await updateProfile({ meta_kcal_diaria: Number(novaMeta) })
       setNovaMeta('')
       setEditingMeta(false)
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleSetSexo(e) {
+    e.preventDefault()
+    setError('')
+    try {
+      await updateProfile({ sexo: novoSexo })
+      setEditingSexo(false)
     } catch (err) {
       setError(err.message)
     }
@@ -128,12 +153,14 @@ export default function CaloriesSection() {
     setTipoRefeicao(suggestMealType(nowHHMM()))
     load()
     loadMealAverages()
+    loadMetabolic()
   }
 
   async function handleDelete(id) {
     await supabase.from('calorie_logs').delete().eq('id', id)
     load()
     loadMealAverages()
+    loadMetabolic()
   }
 
   function startEdit(entry) {
@@ -157,6 +184,7 @@ export default function CaloriesSection() {
     setEditingId(null)
     load()
     loadMealAverages()
+    loadMetabolic()
   }
 
   async function handleCopyFromYesterday(entry) {
@@ -175,6 +203,7 @@ export default function CaloriesSection() {
     }
     load()
     loadMealAverages()
+    loadMetabolic()
   }
 
   const total = entries.reduce((sum, e) => sum + e.kcal, 0)
@@ -217,6 +246,47 @@ export default function CaloriesSection() {
         >
           Editar meta
         </button>
+      )}
+
+      {metabolic ? (
+        <div className="metabolic-balance">
+          <h3>Baseado na sua taxa metabólica</h3>
+          <p className={`kcal-saldo${metabolic.saldoHoje < 0 ? ' negative' : ''}`}>
+            Hoje: {metabolic.saldoHoje >= 0 ? 'deixou de consumir' : 'consumiu'}{' '}
+            {Math.abs(Math.round(metabolic.saldoHoje))} kcal
+          </p>
+          <p className={`kcal-saldo${metabolic.acumuladoSemana < 0 ? ' negative' : ''}`}>
+            Últimos 7 dias: {metabolic.acumuladoSemana >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
+            {Math.abs(Math.round(metabolic.acumuladoSemana))} kcal
+            {metabolic.acumuladoSemana >= 0 ? ' a menos do que gastou' : ' do que gastou'}
+          </p>
+        </div>
+      ) : (
+        <div className="metabolic-balance">
+          <p className="empty-state">
+            Defina seu sexo pra calcular sua taxa metabólica basal e ver quanto você deixou de consumir com base no
+            que realmente gastou (não só na meta).
+          </p>
+          {editingSexo ? (
+            <form onSubmit={handleSetSexo} className="form-actions">
+              <label>
+                Sexo
+                <select value={novoSexo} onChange={(e) => setNovoSexo(e.target.value)}>
+                  <option value="M">Masculino</option>
+                  <option value="F">Feminino</option>
+                </select>
+              </label>
+              <button type="submit">Salvar</button>
+              <button type="button" className="link-button" onClick={() => setEditingSexo(false)}>
+                Cancelar
+              </button>
+            </form>
+          ) : (
+            <button className="link-button" onClick={() => setEditingSexo(true)}>
+              Definir sexo
+            </button>
+          )}
+        </div>
       )}
 
       <form className="stacked-form" onSubmit={handleAdd}>
