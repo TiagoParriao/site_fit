@@ -8,11 +8,13 @@ import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 // (não dá pra calcular TMB sem esses dados) e voltam em `membrosSemDados`.
 export async function fetchGroupMetabolicHistory(supabase, members, preset, opts) {
   let { start, end } = resolvePeriodRange(preset, opts)
-  // Hoje ainda não fechou, então por padrão a janela termina ontem — a
-  // exceção é o preset "dia", onde a pessoa escolheu aquela data explicitamente.
-  if (preset !== 'dia' && end === todayISO()) {
-    start = addDaysISO(start, -1)
-    end = addDaysISO(end, -1)
+  // Hoje ainda não fechou (e a semana de calendário pode até incluir dias
+  // futuros, tipo sábado/domingo antes de chegar neles), então por padrão a
+  // janela nunca passa de ontem — a exceção é o preset "dia", onde a pessoa
+  // escolheu aquela data explicitamente.
+  const ontem = addDaysISO(todayISO(), -1)
+  if (preset !== 'dia' && end > ontem) {
+    end = ontem
   }
 
   const elegiveis = members.filter((m) => m.sexo && m.altura_cm && m.data_nascimento)
