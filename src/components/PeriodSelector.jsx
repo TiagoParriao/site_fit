@@ -21,6 +21,26 @@ export default function PeriodSelector({ preset, onPresetChange, date, onDateCha
           <input type="date" value={date} onChange={(e) => onDateChange(e.target.value)} />
         </label>
       )}
+      {preset === 'mes' && (
+        <label>
+          Mês
+          <input
+            type="month"
+            value={date ? date.slice(0, 7) : ''}
+            onChange={(e) => onDateChange(`${e.target.value}-01`)}
+          />
+        </label>
+      )}
+      {preset === 'ano' && (
+        <label>
+          Ano
+          <input
+            type="number"
+            value={date ? date.slice(0, 4) : ''}
+            onChange={(e) => onDateChange(`${e.target.value}-01-01`)}
+          />
+        </label>
+      )}
       {preset === 'custom' && (
         <div className="grid-2">
           <label>
