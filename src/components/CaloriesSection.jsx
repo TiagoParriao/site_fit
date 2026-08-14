@@ -6,6 +6,7 @@ import PeriodSelector from './PeriodSelector'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { fetchMealTypeAverages } from '../lib/mealAverages'
 import { todayISO, addDaysISO } from '../lib/dates'
+import { shortDateLabel } from '../lib/chartAxis'
 import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
 import { PencilIcon, TrashIcon } from './icons'
 
@@ -88,9 +89,9 @@ export default function CaloriesSection() {
   }, [loadYesterday])
 
   const loadMetabolic = useCallback(async () => {
-    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
+    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile, data)
     setMetabolic(result)
-  }, [user.id, profile])
+  }, [user.id, profile, data])
 
   useEffect(() => {
     loadMetabolic()
@@ -251,12 +252,13 @@ export default function CaloriesSection() {
       {metabolic ? (
         <div className="metabolic-balance">
           <h3>Baseado na sua taxa metabólica</h3>
-          <p className={`kcal-saldo${metabolic.saldoHoje < 0 ? ' negative' : ''}`}>
-            Hoje: {metabolic.saldoHoje >= 0 ? 'deixou de consumir' : 'consumiu'}{' '}
-            {Math.abs(Math.round(metabolic.saldoHoje))} kcal
+          <p className={`kcal-saldo${metabolic.saldoDia < 0 ? ' negative' : ''}`}>
+            {isToday ? 'Hoje' : `Em ${shortDateLabel(data)}`}:{' '}
+            {metabolic.saldoDia >= 0 ? 'deixou de consumir' : 'consumiu'}{' '}
+            {Math.abs(Math.round(metabolic.saldoDia))} kcal
           </p>
           <p className={`kcal-saldo${metabolic.acumuladoSemana < 0 ? ' negative' : ''}`}>
-            Últimos 7 dias: {metabolic.acumuladoSemana >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
+            7 dias até {shortDateLabel(data)}: {metabolic.acumuladoSemana >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
             {Math.abs(Math.round(metabolic.acumuladoSemana))} kcal
             {metabolic.acumuladoSemana >= 0 ? ' a menos do que gastou' : ' do que gastou'}
           </p>

@@ -1,22 +1,24 @@
-import { todayISO, isoDaysAgo } from './dates'
+import { todayISO, addDaysISO } from './dates'
 import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 
-// Saldo dos últimos 7 dias (mesma janela usada em toda a "Semana" do app),
-// com base na TMB real da pessoa em vez da meta fixa de kcal.
-export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
+// Saldo dos 7 dias terminando na data de referência (por padrão, hoje) — mesma
+// janela usada em toda a "Semana" do app — com base na TMB real da pessoa em
+// vez da meta fixa de kcal.
+export async function fetchWeeklyMetabolicBalance(supabase, userId, profile, referenceDateISO = todayISO()) {
   if (!profile?.sexo || !profile?.altura_cm || !profile?.data_nascimento) return null
 
   const { data: pesoRow } = await supabase
     .from('weight_logs')
     .select('peso_kg')
     .eq('user_id', userId)
+    .lte('data', referenceDateISO)
     .order('data', { ascending: false })
     .limit(1)
     .maybeSingle()
   if (!pesoRow) return null
 
-  const start = isoDaysAgo(6)
-  const end = todayISO()
+  const end = referenceDateISO
+  const start = addDaysISO(end, -6)
 
   const [{ data: caloriaRows }, { data: exercicioRows }] = await Promise.all([
     supabase.from('calorie_logs').select('kcal, data').eq('user_id', userId).gte('data', start).lte('data', end),
@@ -42,7 +44,7 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
 
   const dias = []
   for (let i = 6; i >= 0; i--) {
-    const data = isoDaysAgo(i)
+    const data = addDaysISO(end, -i)
     const consumido = consumidoPorDia[data] || 0
     const exercicio = exercicioPorDia[data] || 0
     const getDia = calcularGetDia(tmb, exercicio)
@@ -53,7 +55,8 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
     tmb,
     idade,
     dias,
-    saldoHoje: dias[dias.length - 1].saldo,
+    referenceDate: end,
+    saldoDia: dias[dias.length - 1].saldo,
     acumuladoSemana: dias.reduce((sum, d) => sum + d.saldo, 0),
   }
 }

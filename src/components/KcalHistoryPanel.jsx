@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
+import { fetchGroupMetabolicHistory } from '../lib/metabolicGroupHistory'
 import { colorForUser } from '../lib/avatarColor'
 import PeriodSelector from './PeriodSelector'
 import KcalHistoryChart from './KcalHistoryChart'
+import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { todayISO } from '../lib/dates'
 
 export default function KcalHistoryPanel({ group, members }) {
@@ -17,6 +19,13 @@ export default function KcalHistoryPanel({ group, members }) {
   const [tituloAtual, setTituloAtual] = useState(group?.kcal_titulo || 'Histórico de calorias')
   const [error, setError] = useState('')
 
+  const [showMetabolic, setShowMetabolic] = useState(false)
+  const [metabolicPreset, setMetabolicPreset] = useState('semana')
+  const [metabolicDate, setMetabolicDate] = useState(todayISO())
+  const [metabolicStart, setMetabolicStart] = useState(todayISO())
+  const [metabolicEnd, setMetabolicEnd] = useState(todayISO())
+  const [metabolicResult, setMetabolicResult] = useState({ chartDates: [], chartSeries: [], membrosSemDados: [] })
+
   useEffect(() => {
     setTituloAtual(group?.kcal_titulo || 'Histórico de calorias')
   }, [group?.kcal_titulo])
@@ -29,6 +38,19 @@ export default function KcalHistoryPanel({ group, members }) {
   useEffect(() => {
     load()
   }, [load])
+
+  const loadMetabolic = useCallback(async () => {
+    const data = await fetchGroupMetabolicHistory(supabase, members, metabolicPreset, {
+      date: metabolicDate,
+      start: metabolicStart,
+      end: metabolicEnd,
+    })
+    setMetabolicResult(data)
+  }, [members, metabolicPreset, metabolicDate, metabolicStart, metabolicEnd])
+
+  useEffect(() => {
+    if (showMetabolic) loadMetabolic()
+  }, [showMetabolic, loadMetabolic])
 
   async function handleSaveTitle(e) {
     e.preventDefault()
@@ -157,6 +179,45 @@ export default function KcalHistoryPanel({ group, members }) {
               </span>
             ))}
           </div>
+
+          <button type="button" className="link-button" onClick={() => setShowMetabolic((v) => !v)}>
+            {showMetabolic ? 'Ocultar saldo por TMB' : 'Ver saldo por TMB de cada membro'}
+          </button>
+          {showMetabolic && (
+            <>
+              <h3>Saldo calórico baseado na TMB</h3>
+              <PeriodSelector
+                preset={metabolicPreset}
+                onPresetChange={setMetabolicPreset}
+                date={metabolicDate}
+                onDateChange={setMetabolicDate}
+                start={metabolicStart}
+                onStartChange={setMetabolicStart}
+                end={metabolicEnd}
+                onEndChange={setMetabolicEnd}
+              />
+              <MetabolicHistoryChart
+                dates={metabolicResult.chartDates}
+                series={metabolicResult.chartSeries}
+                emptyMessage="Sem dados suficientes nesse período."
+              />
+              {metabolicResult.chartSeries.length > 0 && (
+                <div className="chart-legend">
+                  {metabolicResult.chartSeries.map((s) => (
+                    <span key={s.user_id}>
+                      <span className="chart-legend-swatch" style={{ background: colorForUser(s.user_id, s.cor) }} />
+                      {s.nome}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {metabolicResult.membrosSemDados.length > 0 && (
+                <p className="empty-state">
+                  {metabolicResult.membrosSemDados.join(', ')} ainda não {metabolicResult.membrosSemDados.length > 1 ? 'definiram' : 'definiu'} sexo, peso ou altura suficientes pra calcular a TMB.
+                </p>
+              )}
+            </>
+          )}
         </>
       )}
     </div>
