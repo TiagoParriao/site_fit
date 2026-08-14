@@ -231,11 +231,14 @@ export default function KcalHistoryPanel({ group, members }) {
               )}
               {personalMetabolic && (
                 <>
-                  <p className={`kcal-saldo${personalMetabolic.acumulado < 0 ? ' negative' : ''}`}>
-                    Últimos 7 dias (até ontem): {personalMetabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
-                    {Math.abs(Math.round(personalMetabolic.acumulado))} kcal
-                    {personalMetabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
-                  </p>
+                  {personalMetabolic.dias.length > 0 && (
+                    <p className={`kcal-saldo${personalMetabolic.acumulado < 0 ? ' negative' : ''}`}>
+                      Últimos {personalMetabolic.dias.length} dias (até ontem):{' '}
+                      {personalMetabolic.acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
+                      {Math.abs(Math.round(personalMetabolic.acumulado))} kcal
+                      {personalMetabolic.acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
+                    </p>
+                  )}
                   <p className="kcal-saldo">
                     Hoje (em andamento): gasto estimado até agora é {Math.round(personalMetabolic.getHoje)} kcal
                   </p>

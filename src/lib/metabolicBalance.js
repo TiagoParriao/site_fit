@@ -1,4 +1,4 @@
-import { todayISO, addDaysISO } from './dates'
+import { todayISO, addDaysISO, toLocalISO } from './dates'
 import { calcularIdade, calcularTMB, calcularGetDia } from './metabolism'
 
 // Foto fixa: 7 dias completos (terminando ontem, nunca hoje — hoje ainda não
@@ -20,7 +20,11 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
   if (!pesoRow) return null
 
   const ontem = addDaysISO(hoje, -1)
-  const start = addDaysISO(ontem, -6)
+  // Não faz sentido contar dias de antes da conta existir como "deixou de consumir"
+  // a GET inteira — não é que a pessoa não comeu, é que nem tinha onde lançar ainda.
+  const criadoEm = profile.created_at ? toLocalISO(new Date(profile.created_at)) : null
+  let start = addDaysISO(ontem, -6)
+  if (criadoEm && criadoEm > start) start = criadoEm
 
   const [{ data: caloriaRows }, { data: exercicioRows }] = await Promise.all([
     supabase.from('calorie_logs').select('kcal, data').eq('user_id', userId).gte('data', start).lte('data', hoje),
@@ -45,8 +49,7 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
   })
 
   const dias = []
-  for (let i = 6; i >= 0; i--) {
-    const data = addDaysISO(ontem, -i)
+  for (let data = start; data <= ontem; data = addDaysISO(data, 1)) {
     const consumido = consumidoPorDia[data] || 0
     const exercicio = exercicioPorDia[data] || 0
     const getDia = calcularGetDia(tmb, exercicio)
