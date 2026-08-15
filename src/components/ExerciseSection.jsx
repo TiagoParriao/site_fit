@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import PeriodSelector from './PeriodSelector'
+import ExerciseChart from './ExerciseChart'
 import { fetchExerciseHistory } from '../lib/exerciseHistory'
 import { todayISO } from '../lib/dates'
 import { PencilIcon, TrashIcon } from './icons'
@@ -24,12 +25,11 @@ export default function ExerciseSection() {
   const [editKcalGasta, setEditKcalGasta] = useState('')
   const [editDescricao, setEditDescricao] = useState('')
 
-  const [showResumo, setShowResumo] = useState(false)
   const [resumoPreset, setResumoPreset] = useState('semana')
   const [resumoDate, setResumoDate] = useState(todayISO())
   const [resumoStart, setResumoStart] = useState(todayISO())
   const [resumoEnd, setResumoEnd] = useState(todayISO())
-  const [resumo, setResumo] = useState({ totalSessoes: 0, totalMinutos: 0, mediaMinutos: 0, mediaKcalGasta: 0 })
+  const [resumo, setResumo] = useState({ days: [], totalSessoes: 0, totalMinutos: 0, mediaMinutos: 0, mediaKcalGasta: 0 })
 
   const loadResumo = useCallback(async () => {
     const result = await fetchExerciseHistory(supabase, user.id, resumoPreset, {
@@ -228,32 +228,24 @@ export default function ExerciseSection() {
         </>
       )}
 
-      <button type="button" className="link-button" onClick={() => setShowResumo((v) => !v)}>
-        {showResumo ? 'Ocultar resumo de exercícios' : 'Ver resumo de exercícios'}
-      </button>
-      {showResumo && (
-        <>
-          <PeriodSelector
-            preset={resumoPreset}
-            onPresetChange={setResumoPreset}
-            date={resumoDate}
-            onDateChange={setResumoDate}
-            start={resumoStart}
-            onStartChange={setResumoStart}
-            end={resumoEnd}
-            onEndChange={setResumoEnd}
-          />
-          {resumo.totalSessoes === 0 ? (
-            <p className="empty-state">Sem exercícios registrados nesse período.</p>
-          ) : (
-            <div className="chart-legend">
-              <span>{resumo.totalSessoes} sessões</span>
-              <span>Total de minutos: {resumo.totalMinutos} min</span>
-              <span>Tempo médio: {resumo.mediaMinutos} min</span>
-              <span>Kcal média: {resumo.mediaKcalGasta} kcal</span>
-            </div>
-          )}
-        </>
+      <PeriodSelector
+        preset={resumoPreset}
+        onPresetChange={setResumoPreset}
+        date={resumoDate}
+        onDateChange={setResumoDate}
+        start={resumoStart}
+        onStartChange={setResumoStart}
+        end={resumoEnd}
+        onEndChange={setResumoEnd}
+      />
+      <ExerciseChart days={resumo.days} />
+      {resumo.totalSessoes > 0 && (
+        <div className="chart-legend">
+          <span>{resumo.totalSessoes} sessões</span>
+          <span>Total de minutos: {resumo.totalMinutos} min</span>
+          <span>Tempo médio: {resumo.mediaMinutos} min</span>
+          <span>Kcal média: {resumo.mediaKcalGasta} kcal</span>
+        </div>
       )}
     </>
   )
