@@ -1,6 +1,8 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import PeriodSelector from './PeriodSelector'
+import { fetchExerciseHistory } from '../lib/exerciseHistory'
 import { todayISO } from '../lib/dates'
 import { PencilIcon, TrashIcon } from './icons'
 
@@ -21,6 +23,26 @@ export default function ExerciseSection() {
   const [editMinutos, setEditMinutos] = useState('')
   const [editKcalGasta, setEditKcalGasta] = useState('')
   const [editDescricao, setEditDescricao] = useState('')
+
+  const [showResumo, setShowResumo] = useState(false)
+  const [resumoPreset, setResumoPreset] = useState('semana')
+  const [resumoDate, setResumoDate] = useState(todayISO())
+  const [resumoStart, setResumoStart] = useState(todayISO())
+  const [resumoEnd, setResumoEnd] = useState(todayISO())
+  const [resumo, setResumo] = useState({ totalSessoes: 0, totalMinutos: 0, mediaMinutos: 0, mediaKcalGasta: 0 })
+
+  const loadResumo = useCallback(async () => {
+    const result = await fetchExerciseHistory(supabase, user.id, resumoPreset, {
+      date: resumoDate,
+      start: resumoStart,
+      end: resumoEnd,
+    })
+    setResumo(result)
+  }, [user.id, resumoPreset, resumoDate, resumoStart, resumoEnd])
+
+  useEffect(() => {
+    loadResumo()
+  }, [loadResumo])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -57,11 +79,13 @@ export default function ExerciseSection() {
     setDescricao('')
     setData(todayISO())
     load()
+    loadResumo()
   }
 
   async function handleDelete(id) {
     await supabase.from('exercise_logs').delete().eq('id', id)
     load()
+    loadResumo()
   }
 
   function startEdit(entry) {
@@ -84,6 +108,7 @@ export default function ExerciseSection() {
     }
     setEditingId(null)
     load()
+    loadResumo()
   }
 
   return (
@@ -199,6 +224,34 @@ export default function ExerciseSection() {
                 )}
               </tbody>
             </table>
+          )}
+        </>
+      )}
+
+      <button type="button" className="link-button" onClick={() => setShowResumo((v) => !v)}>
+        {showResumo ? 'Ocultar resumo de exercícios' : 'Ver resumo de exercícios'}
+      </button>
+      {showResumo && (
+        <>
+          <PeriodSelector
+            preset={resumoPreset}
+            onPresetChange={setResumoPreset}
+            date={resumoDate}
+            onDateChange={setResumoDate}
+            start={resumoStart}
+            onStartChange={setResumoStart}
+            end={resumoEnd}
+            onEndChange={setResumoEnd}
+          />
+          {resumo.totalSessoes === 0 ? (
+            <p className="empty-state">Sem exercícios registrados nesse período.</p>
+          ) : (
+            <div className="chart-legend">
+              <span>{resumo.totalSessoes} sessões</span>
+              <span>Total de minutos: {resumo.totalMinutos} min</span>
+              <span>Tempo médio: {resumo.mediaMinutos} min</span>
+              <span>Kcal média: {resumo.mediaKcalGasta} kcal</span>
+            </div>
           )}
         </>
       )}
