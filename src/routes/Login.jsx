@@ -25,9 +25,27 @@ export default function Login() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-login-page">
+      <section className="auth-intro">
+        <div className="auth-brand">
+          <span className="navbar-logo-mark"><i /><i /><i /></span>
+          <span><strong>Magros</strong> <em>Skinnys</em></span>
+        </div>
+        <div className="auth-intro-copy">
+          <span className="auth-pill">Saúde compartilhada</span>
+          <h2>Juntos no caminho.<br /><em>Cada um no seu ritmo.</em></h2>
+          <p>Acompanhe saúde, evolução e hábitos com quem importa — mantendo suas finanças só para você.</p>
+        </div>
+        <div className="auth-highlights">
+          <span><strong>Saúde</strong>visível no grupo</span>
+          <span><strong>Finanças</strong>100% privadas</span>
+          <span><strong>Histórico</strong>sempre preservado</span>
+        </div>
+      </section>
       <form className="card auth-card" onSubmit={handleSubmit}>
+        <span className="auth-form-kicker">Boas-vindas de volta</span>
         <h1>Entrar</h1>
+        <p className="auth-form-subtitle">Continue de onde parou.</p>
         {error && <p className="error">{error}</p>}
         <label>
           Email

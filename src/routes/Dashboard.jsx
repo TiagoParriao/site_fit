@@ -56,7 +56,11 @@ export default function Dashboard() {
 
   return (
     <div className="page">
-      <h1>Olá, {profile?.nome}!</h1>
+      <header className="route-header">
+        <span>Visão geral</span>
+        <h1>Olá, {profile?.nome}!</h1>
+        <p>Seu progresso e o ritmo do grupo em um só lugar.</p>
+      </header>
 
       {!group && (
         <p className="empty-state">

@@ -164,19 +164,31 @@ export default function KcalHistoryPanel({ group, members }) {
             )}
           </div>
 
-          <h3>Kcal gastas em exercício</h3>
-          <KcalHistoryChart
-            dates={result.chartDatesGasto}
-            series={result.chartSeriesGasto}
-            emptyMessage="Sem exercícios registrados nesse período."
-          />
-          <div className="chart-legend">
-            {result.rows.map((r) => (
-              <span key={r.user_id}>
-                <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
-                {r.nome} — {r.totalGastoPeriodo} kcal gastas
-              </span>
-            ))}
+          <div className="group-exercise-section">
+            <div className="group-chart-heading">
+              <div>
+                <span className="section-kicker">Exercícios do grupo</span>
+                <h3>Kcal gastas em exercício</h3>
+                <p>Valores diários de todos os membros no período selecionado.</p>
+              </div>
+            </div>
+            <KcalHistoryChart
+              dates={result.chartDatesGasto}
+              series={result.chartSeriesGasto}
+              emptyMessage="Sem exercícios registrados nesse período."
+            />
+            <div className="exercise-member-grid">
+              {result.rows.map((r) => (
+                <div className="exercise-member-card" key={r.user_id}>
+                  <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
+                  <div>
+                    <strong>{r.nome}</strong>
+                    <span>{r.totalSessoesPeriodo} {r.totalSessoesPeriodo === 1 ? 'sessão' : 'sessões'} · {r.totalMinutosPeriodo} min</span>
+                  </div>
+                  <b>{new Intl.NumberFormat('pt-BR').format(r.totalGastoPeriodo)} kcal</b>
+                </div>
+              ))}
+            </div>
           </div>
 
           <h3>Saldo calórico baseado na TMB</h3>

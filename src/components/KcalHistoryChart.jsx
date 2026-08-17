@@ -4,12 +4,14 @@ import { weekdayLabel, shortDateLabel, niceMax, axisTicks } from '../lib/chartAx
 const HEIGHT = 220
 const PADDING_LEFT = 42
 const PADDING_RIGHT = 12
-const PADDING_TOP = 18
+const PADDING_TOP = 32
 const PADDING_BOTTOM = 34
-const GROUP_GAP = 24
-const BAR_GAP = 4
-const BAR_WIDTH = 14
+const GROUP_GAP = 30
+const BAR_GAP = 8
+const BAR_WIDTH = 20
 const STEP = 200
+
+const formatKcal = (value) => new Intl.NumberFormat('pt-BR').format(value)
 
 export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem registros de calorias nesse período.' }) {
   if (!dates || dates.length === 0 || !series || series.length === 0) {
@@ -28,7 +30,7 @@ export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem re
 
   return (
     <div className="kcal-chart-scroll">
-      <svg className="kcal-chart" viewBox={`0 0 ${width} ${HEIGHT}`} width={width}>
+      <svg className="kcal-chart" viewBox={`0 0 ${width} ${HEIGHT}`} width={width} role="img" aria-label="Calorias por dia e por membro">
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={PADDING_LEFT} y1={scaleY(tick)} x2={width - PADDING_RIGHT} y2={scaleY(tick)} className="chart-axis-line" />
@@ -53,8 +55,8 @@ export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem re
                       <title>{`${s.nome}: ${value} kcal`}</title>
                     </rect>
                     {value > 0 && (
-                      <text x={x + BAR_WIDTH / 2} y={y - 3} textAnchor="middle" className="chart-bar-value">
-                        {value}
+                      <text x={x + BAR_WIDTH / 2} y={Math.max(y - 5, 11)} textAnchor="middle" className="chart-bar-value">
+                        {formatKcal(value)}
                       </text>
                     )}
                   </g>

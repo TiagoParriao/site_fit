@@ -6,7 +6,10 @@ export default function NavBar() {
 
   return (
     <nav className="navbar">
-      <span className="navbar-brand">Magros Skinnys</span>
+      <span className="navbar-brand">
+        <span className="navbar-logo-mark"><i /><i /><i /></span>
+        <span><strong>Magros</strong> <em>Skinnys</em></span>
+      </span>
       <div className="navbar-links">
         <NavLink to="/" end>
           Trilha
@@ -16,7 +19,8 @@ export default function NavBar() {
         <NavLink to="/grupo">Grupo</NavLink>
       </div>
       <div className="navbar-user">
-        {profile && <span>{profile.nome}</span>}
+        {profile && <span className="navbar-avatar">{profile.nome?.slice(0, 1).toUpperCase()}</span>}
+        {profile && <span className="navbar-user-name">{profile.nome}</span>}
         <button className="link-button" onClick={signOut}>
           Sair
         </button>

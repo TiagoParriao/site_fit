@@ -8,7 +8,7 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
 
   const [{ data }, { data: exerciseData }] = await Promise.all([
     supabase.from('calorie_logs').select('user_id, data, kcal').in('user_id', userIds).gte('data', start).lte('data', end),
-    supabase.from('exercise_logs').select('user_id, data, kcal_gasta').in('user_id', userIds).gte('data', start).lte('data', end),
+    supabase.from('exercise_logs').select('user_id, data, kcal_gasta, minutos').in('user_id', userIds).gte('data', start).lte('data', end),
   ])
 
   const totals = {}
@@ -20,10 +20,14 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
   }
 
   const gastoTotals = {}
+  const minutosTotals = {}
+  const sessoesTotals = {}
   const gastoDayTotals = {}
   const gastoDatesSet = new Set()
   for (const row of exerciseData ?? []) {
     gastoTotals[row.user_id] = (gastoTotals[row.user_id] ?? 0) + row.kcal_gasta
+    minutosTotals[row.user_id] = (minutosTotals[row.user_id] ?? 0) + row.minutos
+    sessoesTotals[row.user_id] = (sessoesTotals[row.user_id] ?? 0) + 1
     gastoDayTotals[row.user_id] ??= {}
     gastoDayTotals[row.user_id][row.data] = (gastoDayTotals[row.user_id][row.data] ?? 0) + row.kcal_gasta
     gastoDatesSet.add(row.data)
@@ -46,6 +50,8 @@ export async function fetchGroupKcalHistory(supabase, members, preset, opts) {
       diasEstouradosLista: days.filter((d) => d.over),
       totalPeriodo: days.reduce((sum, d) => sum + d.total, 0),
       totalGastoPeriodo: gastoTotals[m.user_id] ?? 0,
+      totalMinutosPeriodo: minutosTotals[m.user_id] ?? 0,
+      totalSessoesPeriodo: sessoesTotals[m.user_id] ?? 0,
     }
   })
 
