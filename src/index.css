@@ -752,48 +752,6 @@ button:disabled {
   margin: 0;
 }
 
-/* Copiar refeição de ontem */
-
-.copy-yesterday {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  background: var(--bg);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-
-.copy-yesterday-title {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.copy-yesterday-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.copy-yesterday-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 13px;
-}
-
-.copy-yesterday-item button {
-  padding: 2px 8px;
-  font-size: 12px;
-  border-radius: 999px;
-}
-
 /* Finance */
 
 .finance-positive {

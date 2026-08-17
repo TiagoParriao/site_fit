@@ -2,16 +2,10 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import CalorieProgressBar from './CalorieProgressBar'
-import PeriodSelector from './PeriodSelector'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
-import { fetchMealTypeAverages } from '../lib/mealAverages'
-import { todayISO, addDaysISO } from '../lib/dates'
+import { todayISO } from '../lib/dates'
 import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
 import { PencilIcon, TrashIcon } from './icons'
-
-function yesterdayOf(dataISO) {
-  return addDaysISO(dataISO, -1)
-}
 
 function nowHHMM() {
   return new Date().toTimeString().slice(0, 5)
@@ -21,7 +15,6 @@ export default function CaloriesSection() {
   const { user, profile, updateProfile } = useAuth()
   const [data, setData] = useState(todayISO())
   const [entries, setEntries] = useState([])
-  const [yesterdayEntries, setYesterdayEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -39,19 +32,11 @@ export default function CaloriesSection() {
   const [editHora, setEditHora] = useState('')
   const [editTipoRefeicao, setEditTipoRefeicao] = useState('outro')
 
-  const [mealPreset, setMealPreset] = useState('semana')
-  const [mealDate, setMealDate] = useState(todayISO())
-  const [mealStart, setMealStart] = useState(todayISO())
-  const [mealEnd, setMealEnd] = useState(todayISO())
-  const [mealAverages, setMealAverages] = useState({ rows: [] })
   const [showEntries, setShowEntries] = useState(false)
-  const [showAverages, setShowAverages] = useState(false)
 
   const [metabolic, setMetabolic] = useState(null)
   const [editingSexo, setEditingSexo] = useState(false)
   const [novoSexo, setNovoSexo] = useState('M')
-
-  const isToday = data === todayISO()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,27 +50,9 @@ export default function CaloriesSection() {
     setLoading(false)
   }, [user.id, data])
 
-  const loadYesterday = useCallback(async () => {
-    if (!isToday) {
-      setYesterdayEntries([])
-      return
-    }
-    const { data: rows } = await supabase
-      .from('calorie_logs')
-      .select('*')
-      .eq('user_id', user.id)
-      .eq('data', yesterdayOf(data))
-      .order('hora', { ascending: true })
-    setYesterdayEntries(rows ?? [])
-  }, [user.id, data, isToday])
-
   useEffect(() => {
     load()
   }, [load])
-
-  useEffect(() => {
-    loadYesterday()
-  }, [loadYesterday])
 
   const loadMetabolic = useCallback(async () => {
     const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
@@ -95,19 +62,6 @@ export default function CaloriesSection() {
   useEffect(() => {
     loadMetabolic()
   }, [loadMetabolic])
-
-  const loadMealAverages = useCallback(async () => {
-    const result = await fetchMealTypeAverages(supabase, user.id, mealPreset, {
-      date: mealDate,
-      start: mealStart,
-      end: mealEnd,
-    })
-    setMealAverages(result)
-  }, [user.id, mealPreset, mealDate, mealStart, mealEnd])
-
-  useEffect(() => {
-    loadMealAverages()
-  }, [loadMealAverages])
 
   async function handleUpdateMeta(e) {
     e.preventDefault()
@@ -152,14 +106,12 @@ export default function CaloriesSection() {
     setHora(nowHHMM())
     setTipoRefeicao(suggestMealType(nowHHMM()))
     load()
-    loadMealAverages()
     loadMetabolic()
   }
 
   async function handleDelete(id) {
     await supabase.from('calorie_logs').delete().eq('id', id)
     load()
-    loadMealAverages()
     loadMetabolic()
   }
 
@@ -183,26 +135,6 @@ export default function CaloriesSection() {
     }
     setEditingId(null)
     load()
-    loadMealAverages()
-    loadMetabolic()
-  }
-
-  async function handleCopyFromYesterday(entry) {
-    setError('')
-    const { error } = await supabase.from('calorie_logs').insert({
-      user_id: user.id,
-      kcal: entry.kcal,
-      descricao: entry.descricao,
-      data,
-      hora: nowHHMM(),
-      tipo_refeicao: entry.tipo_refeicao,
-    })
-    if (error) {
-      setError(error.message)
-      return
-    }
-    load()
-    loadMealAverages()
     loadMetabolic()
   }
 
@@ -304,22 +236,6 @@ export default function CaloriesSection() {
         <button type="submit">Adicionar refeição</button>
       </form>
 
-      {isToday && yesterdayEntries.length > 0 && (
-        <div className="copy-yesterday">
-          <span className="copy-yesterday-title">Copiar de ontem</span>
-          <div className="copy-yesterday-list">
-            {yesterdayEntries.map((e) => (
-              <span key={e.id} className="copy-yesterday-item">
-                {e.descricao || 'refeição'} ({e.kcal} kcal)
-                <button type="button" onClick={() => handleCopyFromYesterday(e)}>
-                  + hoje
-                </button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
       {loading ? (
         <p>Carregando...</p>
       ) : entries.length === 0 ? (
@@ -412,46 +328,6 @@ export default function CaloriesSection() {
         </>
       )}
 
-      <button type="button" className="link-button" onClick={() => setShowAverages((v) => !v)}>
-        {showAverages ? 'Ocultar média por refeição' : 'Ver média por refeição'}
-      </button>
-      {showAverages && (
-        <>
-          <h3>Média por refeição</h3>
-          <PeriodSelector
-            preset={mealPreset}
-            onPresetChange={setMealPreset}
-            date={mealDate}
-            onDateChange={setMealDate}
-            start={mealStart}
-            onStartChange={setMealStart}
-            end={mealEnd}
-            onEndChange={setMealEnd}
-          />
-          {mealAverages.rows.length === 0 ? (
-            <p className="empty-state">Sem registros suficientes nesse período.</p>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Refeição</th>
-                  <th>Média</th>
-                  <th>Registros</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mealAverages.rows.map((r) => (
-                  <tr key={r.key}>
-                    <td data-label="Refeição">{r.label}</td>
-                    <td data-label="Média">{r.media} kcal</td>
-                    <td data-label="Registros">{r.registros}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </>
-      )}
     </>
   )
 }
