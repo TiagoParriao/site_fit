@@ -88,12 +88,16 @@ export default function Group() {
 
   return (
     <div className="page">
-      <h1>Grupo</h1>
+      <header className="route-header">
+        <span>Nossa equipe</span>
+        <h1>Grupo</h1>
+        <p>Evoluir junto deixa o caminho mais leve.</p>
+      </header>
       {error && <p className="error">{error}</p>}
       {info && <p className="info">{info}</p>}
 
-      <div className="grid-2">
-        <form className="card" onSubmit={handleCreate}>
+      <div className="grid-2 group-actions-real">
+        <form className="card group-action-card" onSubmit={handleCreate}>
           <h2>Criar grupo</h2>
           <label>
             Nome do grupo
@@ -102,7 +106,7 @@ export default function Group() {
           <button type="submit">Criar</button>
         </form>
 
-        <form className="card" onSubmit={handleJoin}>
+        <form className="card group-action-card" onSubmit={handleJoin}>
           <h2>Entrar com código</h2>
           <label>
             Código de convite
@@ -121,12 +125,13 @@ export default function Group() {
         <p className="empty-state">Você ainda não está em nenhum grupo.</p>
       ) : (
         groups.map((g) => (
-          <div className="card" key={g.id}>
-            <h2>{g.nome}</h2>
-            <p className="info">
-              Código de convite: <strong>{g.invite_code}</strong> (compartilhe com seus amigos)
-            </p>
-            <ul className="member-list">
+          <div className="card group-card-real" key={g.id}>
+            <div className="group-hero-real">
+              <div><span className="section-kicker">Seu grupo</span><h2>{g.nome}</h2><p>{g.members.length} {g.members.length === 1 ? 'membro' : 'membros'} acompanhando juntos</p></div>
+              <div className="invite-code-real"><span>Código de convite</span><strong>{g.invite_code}</strong></div>
+            </div>
+            <div className="card-heading-real members-heading-real"><div><h3>Membros</h3><p>Clique em alguém para ver o resumo do período.</p></div></div>
+            <ul className="member-list member-list-real">
               {g.members.map((m) => (
                 <li key={m.user_id} className="member-color-row">
                   <button

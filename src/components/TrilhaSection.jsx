@@ -6,7 +6,9 @@ export default function TrilhaSection() {
   const [tipo, setTipo] = useState('caloria')
 
   return (
-    <div className="card">
+    <div className="card personal-trail-card">
+      <div className="personal-trail-head">
+        <div><span className="section-kicker">Registro pessoal</span><h2>Minha trilha</h2><p>Registre o que move seu dia.</p></div>
       <div className="section-tabs">
         <button
           type="button"
@@ -22,6 +24,7 @@ export default function TrilhaSection() {
         >
           Exercício
         </button>
+      </div>
       </div>
       {tipo === 'caloria' ? <CaloriesSection /> : <ExerciseSection />}
     </div>

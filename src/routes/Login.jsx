@@ -43,6 +43,7 @@ export default function Login() {
         </div>
       </section>
       <form className="card auth-card" onSubmit={handleSubmit}>
+        <div className="auth-mobile-brand"><span className="navbar-logo-mark"><i /><i /><i /></span><span><strong>Magros</strong> <em>Skinnys</em></span></div>
         <span className="auth-form-kicker">Boas-vindas de volta</span>
         <h1>Entrar</h1>
         <p className="auth-form-subtitle">Continue de onde parou.</p>

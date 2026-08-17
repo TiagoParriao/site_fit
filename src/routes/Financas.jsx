@@ -224,6 +224,10 @@ export default function Financas() {
     () => logs.filter((l) => l.data <= hoje).sort((a, b) => (a.data < b.data ? 1 : -1)),
     [logs, hoje]
   )
+  const totalAVencer = useMemo(
+    () => logsFuturos.reduce((sum, l) => sum + Number(l.valor), 0) + faturaAberta,
+    [logsFuturos, faturaAberta]
+  )
 
   // Se tudo que ainda não caiu (entradas e saídas futuras na conta) caísse hoje, e a fatura
   // em aberto fosse paga junto — sem limite de mês, pra dar pra planejar vários meses à frente.
@@ -337,11 +341,22 @@ export default function Financas() {
 
   return (
     <div className="page">
-      <h1>Finanças</h1>
-      <p className="empty-state">Seus lançamentos aqui são privados: ninguém do grupo pode ver.</p>
+      <header className="route-header">
+        <span>Só você vê</span>
+        <h1>Finanças</h1>
+        <p>Clareza para decidir, privacidade por padrão.</p>
+      </header>
+      <div className="finance-privacy-strip-real"><strong>✓ Seus dados financeiros são privados.</strong><span>Nenhum membro do grupo consegue acessá-los.</span></div>
       {error && <p className="error">{error}</p>}
 
-      <div className="card">
+      <div className="finance-summary-hero-real">
+        <div className="card finance-quick-card finance-quick-balance"><span>Saldo em conta</span><strong>R$ {saldoAtual.toFixed(2)}</strong><p>Movimentos em débito, Pix e dinheiro.</p></div>
+        <div className="card finance-quick-card finance-quick-invoice"><span>Cartão de crédito</span><strong>R$ {faturaAberta.toFixed(2)}</strong><p>{itensFaturaAberta.length} {itensFaturaAberta.length === 1 ? 'item' : 'itens'} em aberto.</p></div>
+        <div className="card finance-quick-card finance-quick-future"><span>A vencer</span><strong>R$ {totalAVencer.toFixed(2)}</strong><p>Projeção final: R$ {projecao.toFixed(2)}.</p></div>
+      </div>
+
+      <div className="finance-content-grid-real">
+      <div className="card finance-detail-card">
         <h2>Saldo em conta</h2>
         <p className="empty-state">
           Só conta o que entra e o que sai direto da conta (débito/pix/dinheiro). Compras no cartão não mexem aqui até
@@ -380,7 +395,7 @@ export default function Financas() {
         )}
       </div>
 
-      <div className="card">
+      <div className="card finance-detail-card invoice-detail-card">
         <h2>Cartão de crédito</h2>
         <p className="finance-invoice-total">R$ {faturaAberta.toFixed(2)}</p>
         <p className="empty-state">em compras no cartão que ainda não foram pagas.</p>
@@ -427,8 +442,9 @@ export default function Financas() {
           </p>
         )}
       </div>
+      </div>
 
-      <div className="card">
+      <div className="card finance-future-card">
         <h2>A vencer</h2>
         <p className="empty-state">
           Lançamentos com data futura — o que ainda não caiu na conta — somados à fatura do cartão já em aberto. Sem
@@ -457,8 +473,8 @@ export default function Financas() {
         )}
       </div>
 
-      <form className="card" onSubmit={handleAdd}>
-        <h2>Registrar</h2>
+      <form className="card finance-register-card" onSubmit={handleAdd}>
+        <div className="card-heading-real"><div><span className="section-kicker">Novo movimento</span><h2>Registrar</h2><p>Adicione uma entrada ou saída.</p></div></div>
         <div className="grid-2">
           <label>
             Tipo
@@ -497,8 +513,8 @@ export default function Financas() {
         <button type="submit">Adicionar</button>
       </form>
 
-      <div className="card">
-        <h2>Lançamentos</h2>
+      <div className="card finance-history-card-real">
+        <div className="card-heading-real"><div><span className="section-kicker">Histórico completo</span><h2>Lançamentos</h2><p>Todos os movimentos da sua conta.</p></div></div>
         {logsPassados.length === 0 ? (
           <p className="empty-state">Nada registrado ainda.</p>
         ) : (

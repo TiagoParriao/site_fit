@@ -110,21 +110,35 @@ export default function Weight() {
 
   return (
     <div className="page">
-      <h1>Peso</h1>
+      <header className="route-header">
+        <span>Evolução</span>
+        <h1>Peso e medidas</h1>
+        <p>Pequenas mudanças contam uma grande história.</p>
+      </header>
       {error && <p className="error">{error}</p>}
 
-      <div className="card">
-        <h2>Histórico</h2>
+      <div className="weight-hero-grid-real">
+        <div className="card weight-overview-card">
+          <span className="section-kicker">Peso atual</span>
+          <div className="weight-current-real"><strong>{logs[0]?.peso_kg ?? '—'}</strong><span>kg</span></div>
+          {diff && (
+            <p className={`weight-diff${diff.delta > 0 ? ' up' : ''}`}>
+              {diff.delta > 0 ? '+' : ''}{diff.delta.toFixed(1)}kg desde{' '}
+              {new Date(`${diff.desde}T00:00:00`).toLocaleDateString('pt-BR')}
+            </p>
+          )}
+          {goal && <p className="weight-goal-real">Meta: <strong>{goal.peso_meta_kg}kg</strong> até {new Date(`${goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}</p>}
+        </div>
+      <div className="card weight-chart-card-real">
+        <div className="card-heading-real"><div><span className="section-kicker">Histórico</span><h2>Evolução do peso</h2><p>Acompanhe sua tendência ao longo do tempo.</p></div></div>
         {diff && (
-          <p className={`weight-diff${diff.delta > 0 ? ' up' : ''}`}>
-            {diff.delta > 0 ? '+' : ''}
-            {diff.delta.toFixed(1)}kg desde {new Date(`${diff.desde}T00:00:00`).toLocaleDateString('pt-BR')}
-          </p>
+          <span className={`weight-diff weight-diff-chart${diff.delta > 0 ? ' up' : ''}`}>{diff.delta > 0 ? '+' : ''}{diff.delta.toFixed(1)} kg</span>
         )}
         <WeightHistoryChart logs={logs} goalKg={goal?.peso_meta_kg} />
       </div>
+      </div>
 
-      <div className="grid-2">
+      <div className="grid-2 weight-forms-grid">
         <form className="card" onSubmit={handleAddWeight}>
           <h2>Atualizar peso</h2>
           <label>

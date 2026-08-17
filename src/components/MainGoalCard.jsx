@@ -36,19 +36,21 @@ export default function MainGoalCard({ challenge, onSetChallenge }) {
   }
 
   return (
-    <div className="card">
-      <h2>Desafio do grupo</h2>
+    <div className="card challenge-card-real">
+      <div className="challenge-icon-real">◎</div>
+      <div className="challenge-main-real">
+      <span className="section-kicker">Desafio do grupo</span>
       {challenge ? (
         <>
-          <p className="info">{challenge.titulo}</p>
-          <p className="big-number">{concluido ? '🎉 Concluído!' : `Dia ${dia} de ${total}`}</p>
-          <div className="calorie-progress-track">
-            <div className="calorie-progress-fill" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="calorie-progress-label">
+          <h2>{challenge.titulo}</h2>
+          <p className="challenge-date-real">
             {new Date(`${challenge.data_inicio}T00:00:00`).toLocaleDateString('pt-BR')} até{' '}
             {new Date(`${challenge.data_fim}T00:00:00`).toLocaleDateString('pt-BR')}
           </p>
+          <div className="challenge-progress-real">
+            <div><strong>{concluido ? '🎉 Concluído!' : `Dia ${dia} de ${total}`}</strong><span>{Math.round(pct)}% concluído</span></div>
+            <div className="calorie-progress-track"><div className="calorie-progress-fill" style={{ width: `${pct}%` }} /></div>
+          </div>
         </>
       ) : (
         <p className="empty-state">Nenhum desafio definido ainda.</p>
@@ -82,6 +84,7 @@ export default function MainGoalCard({ challenge, onSetChallenge }) {
           {challenge ? 'Definir novo desafio' : 'Definir desafio'}
         </button>
       )}
+      </div>
     </div>
   )
 }

@@ -85,8 +85,8 @@ export default function MeasurementsSection() {
   }
 
   return (
-    <div className="card">
-      <h2>Medidas corporais</h2>
+    <div className="card measurements-card-real">
+      <div className="card-heading-real"><div><span className="section-kicker">Além da balança</span><h2>Medidas corporais</h2><p>Acompanhe cada parte da sua evolução.</p></div></div>
       {error && <p className="error">{error}</p>}
 
       <form className="stacked-form" onSubmit={handleAdd}>

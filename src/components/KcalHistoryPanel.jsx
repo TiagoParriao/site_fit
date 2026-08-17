@@ -66,7 +66,8 @@ export default function KcalHistoryPanel({ group, members }) {
   if (!group) return null
 
   return (
-    <div className="card">
+    <div className="dashboard-insights-grid">
+      <section className="card kcal-history-card">
       {editingTitle ? (
         <form className="form-actions" onSubmit={handleSaveTitle}>
           <input value={tituloDraft} onChange={(e) => setTituloDraft(e.target.value)} required />
@@ -190,8 +191,13 @@ export default function KcalHistoryPanel({ group, members }) {
               ))}
             </div>
           </div>
-
-          <h3>Saldo calórico baseado na TMB</h3>
+        </>
+      )}
+      </section>
+      <section className="card metabolic-card">
+          <div className="card-heading-real">
+            <div><span className="section-kicker">Metabolismo do grupo</span><h2>Saldo calórico</h2><p>Gasto estimado menos consumo — apenas dias fechados.</p></div>
+          </div>
           <PeriodSelector
             preset={metabolicPreset}
             onPresetChange={setMetabolicPreset}
@@ -234,8 +240,7 @@ export default function KcalHistoryPanel({ group, members }) {
               </div>
             )
           })}
-        </>
-      )}
+      </section>
     </div>
   )
 }

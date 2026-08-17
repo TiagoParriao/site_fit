@@ -52,9 +52,24 @@ export default function Signup() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-login-page auth-signup-page">
+      <section className="auth-intro auth-signup-intro">
+        <div className="auth-brand">
+          <span className="navbar-logo-mark"><i /><i /><i /></span>
+          <span><strong>Magros</strong> <em>Skinnys</em></span>
+        </div>
+        <div className="auth-intro-copy">
+          <span className="auth-pill">Comece sua trilha</span>
+          <h2>Seu progresso.<br /><em>Do seu jeito.</em></h2>
+          <p>Crie sua conta, entre no grupo e comece a construir um histórico que acompanha você.</p>
+        </div>
+        <div className="auth-highlights"><span><strong>Uma conta</strong>todo o histórico</span><span><strong>Seu grupo</strong>apoio compartilhado</span></div>
+      </section>
       <form className="card auth-card" onSubmit={handleSubmit}>
+        <div className="auth-mobile-brand"><span className="navbar-logo-mark"><i /><i /><i /></span><span><strong>Magros</strong> <em>Skinnys</em></span></div>
+        <span className="auth-form-kicker">Comece sua trilha</span>
         <h1>Criar conta</h1>
+        <p className="auth-form-subtitle">Leva menos de dois minutos.</p>
         {error && <p className="error">{error}</p>}
         {info && <p className="info">{info}</p>}
 
