@@ -192,7 +192,6 @@ export default function KcalHistoryPanel({ group, members }) {
               {metabolicResult.chartSeries.map((s) => {
                 const acumulado = s.values.reduce((sum, v) => sum + v, 0)
                 const positivo = acumulado >= 0
-                const pct = Math.min(100, Math.max(6, (Math.abs(acumulado) / Math.max(s.totalGet, 1)) * 100))
                 return (
                   <div key={s.user_id} className="member-report-card">
                     <div className="member-report-head">
@@ -223,12 +222,6 @@ export default function KcalHistoryPanel({ group, members }) {
                       <div className="member-report-progress-head">
                         <span>Saldo acumulado</span>
                         <strong>{Math.abs(Math.round(acumulado)).toLocaleString('pt-BR')} kcal</strong>
-                      </div>
-                      <div className="calorie-progress-track">
-                        <div
-                          className={`calorie-progress-fill${positivo ? '' : ' over'}`}
-                          style={{ width: `${pct}%` }}
-                        />
                       </div>
                       <span className={`member-report-badge${positivo ? '' : ' negative'}`}>
                         {positivo ? 'Saldo positivo' : 'Saldo negativo'}
