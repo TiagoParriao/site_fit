@@ -464,6 +464,166 @@ button:disabled {
   border: 1px solid var(--border);
 }
 
+.member-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.member-avatar-button,
+.member-avatar-static {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.member-avatar-button {
+  border: 1px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+}
+
+.member-avatar-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.avatar-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0 4px 42px;
+}
+
+.avatar-picker-option {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+}
+
+.avatar-picker-option:hover {
+  color: var(--primary);
+}
+
+.avatar-picker-option.active {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(108, 92, 231, 0.12);
+}
+
+/* Member metabolic report cards (Trilha) */
+
+.member-report-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.member-report-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.member-report-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.member-report-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--member-color, var(--primary));
+  border: 2px solid var(--member-color, var(--primary));
+  background: color-mix(in srgb, var(--member-color, var(--primary)) 16%, transparent);
+}
+
+.member-report-name {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.member-report-status {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.member-report-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.member-report-stat {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.member-report-stat span {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.member-report-stat strong {
+  font-size: 15px;
+}
+
+.member-report-progress-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.member-report-badge {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(46, 204, 113, 0.15);
+  color: var(--success);
+}
+
+.member-report-badge.negative {
+  background: rgba(231, 76, 60, 0.15);
+  color: var(--danger);
+}
+
 /* Body measurements */
 
 .measurement-grid {

@@ -15,8 +15,8 @@ function diasTotais(dataInicio, dataFim) {
   return Math.max(1, Math.round((fim - inicio) / (1000 * 60 * 60 * 24)) + 1)
 }
 
-export default function MainGoalCard({ challenge, onSetChallenge }) {
-  const [editing, setEditing] = useState(false)
+export default function MainGoalCard({ challenge, onSetChallenge, onEditChallenge }) {
+  const [mode, setMode] = useState(null) // null | 'new' | 'edit'
   const [titulo, setTitulo] = useState('')
   const [dataInicio, setDataInicio] = useState(todayISO())
   const [dataFim, setDataFim] = useState(todayISO())
@@ -26,13 +26,28 @@ export default function MainGoalCard({ challenge, onSetChallenge }) {
   const concluido = challenge && dia >= total
   const pct = challenge ? Math.min(100, (dia / total) * 100) : 0
 
-  async function handleSubmit(e) {
-    e.preventDefault()
-    await onSetChallenge({ titulo, data_inicio: dataInicio, data_fim: dataFim })
+  function startNew() {
     setTitulo('')
     setDataInicio(todayISO())
     setDataFim(todayISO())
-    setEditing(false)
+    setMode('new')
+  }
+
+  function startEdit() {
+    setTitulo(challenge.titulo)
+    setDataInicio(challenge.data_inicio)
+    setDataFim(challenge.data_fim)
+    setMode('edit')
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (mode === 'edit') {
+      await onEditChallenge(challenge.id, { titulo, data_inicio: dataInicio, data_fim: dataFim })
+    } else {
+      await onSetChallenge({ titulo, data_inicio: dataInicio, data_fim: dataFim })
+    }
+    setMode(null)
   }
 
   return (
@@ -56,7 +71,7 @@ export default function MainGoalCard({ challenge, onSetChallenge }) {
         <p className="empty-state">Nenhum desafio definido ainda.</p>
       )}
 
-      {editing ? (
+      {mode ? (
         <form onSubmit={handleSubmit}>
           <label>
             Título
@@ -74,14 +89,23 @@ export default function MainGoalCard({ challenge, onSetChallenge }) {
           </div>
           <div className="form-actions">
             <button type="submit">Salvar</button>
-            <button type="button" className="link-button" onClick={() => setEditing(false)}>
+            <button type="button" className="link-button" onClick={() => setMode(null)}>
               Cancelar
             </button>
           </div>
         </form>
+      ) : challenge ? (
+        <div className="form-actions">
+          <button className="link-button" onClick={startEdit}>
+            Editar desafio atual
+          </button>
+          <button className="link-button" onClick={startNew}>
+            Definir novo desafio
+          </button>
+        </div>
       ) : (
-        <button className="link-button" onClick={() => setEditing(true)}>
-          {challenge ? 'Definir novo desafio' : 'Definir desafio'}
+        <button className="link-button" onClick={startNew}>
+          Definir desafio
         </button>
       )}
       </div>

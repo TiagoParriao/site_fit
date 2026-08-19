@@ -49,6 +49,16 @@ export default function MainGoalSection({ group }) {
     load()
   }
 
+  async function handleEditChallenge(id, { titulo, data_inicio, data_fim }) {
+    setError('')
+    const { error } = await supabase.from('main_goals').update({ titulo, data_inicio, data_fim }).eq('id', id)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    load()
+  }
+
   if (!group) {
     return (
       <div className="card">
@@ -61,7 +71,7 @@ export default function MainGoalSection({ group }) {
   return (
     <>
       {error && <p className="error">{error}</p>}
-      <MainGoalCard challenge={challenge} onSetChallenge={handleSetChallenge} />
+      <MainGoalCard challenge={challenge} onSetChallenge={handleSetChallenge} onEditChallenge={handleEditChallenge} />
       {history.length > 0 && (
         <div className="card">
           <h2>Desafios anteriores</h2>

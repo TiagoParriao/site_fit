@@ -1,7 +1,8 @@
-import { useEffect, useState, useCallback } from 'react'
+import { Fragment, useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import { colorForUser } from '../lib/avatarColor'
+import { AnimalAvatar, ANIMAL_AVATARS } from '../components/AnimalIcons'
 import MemberProfileModal from '../components/MemberProfileModal'
 
 export default function Group() {
@@ -11,6 +12,7 @@ export default function Group() {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
   const [selectedMember, setSelectedMember] = useState(null)
+  const [pickingAvatar, setPickingAvatar] = useState(false)
 
   const [novoNome, setNovoNome] = useState('')
   const [codigoEntrada, setCodigoEntrada] = useState('')
@@ -28,7 +30,7 @@ export default function Group() {
       groupList.map(async (g) => {
         const { data: members } = await supabase
           .from('group_members')
-          .select('user_id, profiles(nome, cor)')
+          .select('user_id, profiles(nome, cor, avatar_key)')
           .eq('group_id', g.id)
         return { ...g, members: members ?? [] }
       })
@@ -65,6 +67,21 @@ export default function Group() {
           members: g.members.map((m) => (m.user_id === user.id ? { ...m, profiles: { ...m.profiles, cor } } : m)),
         }))
       )
+    } catch (err) {
+      setError(err.message)
+    }
+  }
+
+  async function handleAvatarChange(avatar_key) {
+    try {
+      await updateProfile({ avatar_key })
+      setGroups((prev) =>
+        prev.map((g) => ({
+          ...g,
+          members: g.members.map((m) => (m.user_id === user.id ? { ...m, profiles: { ...m.profiles, avatar_key } } : m)),
+        }))
+      )
+      setPickingAvatar(false)
     } catch (err) {
       setError(err.message)
     }
@@ -133,29 +150,62 @@ export default function Group() {
             <div className="card-heading-real members-heading-real"><div><h3>Membros</h3><p>Clique em alguém para ver o resumo do período.</p></div></div>
             <ul className="member-list member-list-real">
               {g.members.map((m) => (
-                <li key={m.user_id} className="member-color-row">
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => setSelectedMember({ user_id: m.user_id, nome: m.profiles?.nome ?? 'Membro' })}
-                  >
-                    {m.profiles?.nome ?? 'Membro'}
-                  </button>
-                  {m.user_id === user.id ? (
-                    <input
-                      type="color"
-                      className="color-input"
-                      value={colorForUser(m.user_id, m.profiles?.cor)}
-                      onChange={(e) => handleColorChange(e.target.value)}
-                      title="Escolha sua cor"
-                    />
-                  ) : (
-                    <span
-                      className="color-swatch"
-                      style={{ background: colorForUser(m.user_id, m.profiles?.cor) }}
-                    />
+                <Fragment key={m.user_id}>
+                  <li className="member-color-row">
+                    <div className="member-identity">
+                      {m.user_id === user.id ? (
+                        <button
+                          type="button"
+                          className="member-avatar-button"
+                          onClick={() => setPickingAvatar((v) => !v)}
+                          title="Escolher avatar"
+                        >
+                          <AnimalAvatar avatarKey={m.profiles?.avatar_key} size={28} />
+                        </button>
+                      ) : (
+                        <span className="member-avatar-static">
+                          <AnimalAvatar avatarKey={m.profiles?.avatar_key} size={28} />
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => setSelectedMember({ user_id: m.user_id, nome: m.profiles?.nome ?? 'Membro' })}
+                      >
+                        {m.profiles?.nome ?? 'Membro'}
+                      </button>
+                    </div>
+                    {m.user_id === user.id ? (
+                      <input
+                        type="color"
+                        className="color-input"
+                        value={colorForUser(m.user_id, m.profiles?.cor)}
+                        onChange={(e) => handleColorChange(e.target.value)}
+                        title="Escolha sua cor"
+                      />
+                    ) : (
+                      <span
+                        className="color-swatch"
+                        style={{ background: colorForUser(m.user_id, m.profiles?.cor) }}
+                      />
+                    )}
+                  </li>
+                  {m.user_id === user.id && pickingAvatar && (
+                    <li className="avatar-picker-row">
+                      {ANIMAL_AVATARS.map((a) => (
+                        <button
+                          key={a.key}
+                          type="button"
+                          className={`avatar-picker-option${a.key === (m.profiles?.avatar_key || 'gato') ? ' active' : ''}`}
+                          onClick={() => handleAvatarChange(a.key)}
+                          title={a.label}
+                        >
+                          <AnimalAvatar avatarKey={a.key} size={22} />
+                        </button>
+                      ))}
+                    </li>
                   )}
-                </li>
+                </Fragment>
               ))}
             </ul>
           </div>

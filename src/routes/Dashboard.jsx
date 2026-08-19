@@ -28,7 +28,7 @@ export default function Dashboard() {
     if (activeGroup) {
       const { data: groupMembers } = await supabase
         .from('group_members')
-        .select('user_id, profiles(nome, meta_kcal_diaria, cor, sexo, altura_cm, data_nascimento)')
+        .select('user_id, profiles(nome, meta_kcal_diaria, cor, sexo, altura_cm, data_nascimento, avatar_key)')
         .eq('group_id', activeGroup.id)
 
       const flatMembers = (groupMembers ?? []).map((m) => ({
@@ -39,6 +39,7 @@ export default function Dashboard() {
         sexo: m.profiles?.sexo ?? null,
         altura_cm: m.profiles?.altura_cm ?? null,
         data_nascimento: m.profiles?.data_nascimento ?? null,
+        avatar_key: m.profiles?.avatar_key ?? null,
       }))
       setMembers(flatMembers)
     } else {

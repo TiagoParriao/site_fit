@@ -77,7 +77,15 @@ export async function fetchGroupMetabolicHistory(supabase, members, preset, opts
         return Math.round(getDia - consumido)
       })
       const getHoje = calcularGetDia(tmb, exercicioHojePorUsuario[m.user_id] ?? 0)
-      return { user_id: m.user_id, nome: m.nome, cor: m.cor, values, totalGet: Math.round(totalGet), getHoje }
+      return {
+        user_id: m.user_id,
+        nome: m.nome,
+        cor: m.cor,
+        avatarKey: m.avatar_key,
+        values,
+        totalGet: Math.round(totalGet),
+        getHoje,
+      }
     })
 
   const semPeso = elegiveis.filter((m) => pesoPorUsuario[m.user_id] == null).map((m) => m.nome)

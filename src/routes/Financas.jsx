@@ -37,6 +37,9 @@ export default function Financas() {
   const [editDescricao, setEditDescricao] = useState('')
   const [editData, setEditData] = useState('')
 
+  const [showAllLogs, setShowAllLogs] = useState(false)
+  const LOGS_LIMIT = 10
+
   const load = useCallback(async () => {
     setLoading(true)
     const [logsRes, balanceRes] = await Promise.all([
@@ -518,18 +521,25 @@ export default function Financas() {
         {logsPassados.length === 0 ? (
           <p className="empty-state">Nada registrado ainda.</p>
         ) : (
-          <table className="table">
-            <thead>
-              <tr>
-                <th>Data</th>
-                <th>Tipo</th>
-                <th>Descrição</th>
-                <th>Valor</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>{logsPassados.map(renderRow)}</tbody>
-          </table>
+          <>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Tipo</th>
+                  <th>Descrição</th>
+                  <th>Valor</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>{(showAllLogs ? logsPassados : logsPassados.slice(0, LOGS_LIMIT)).map(renderRow)}</tbody>
+            </table>
+            {logsPassados.length > LOGS_LIMIT && (
+              <button type="button" className="link-button" onClick={() => setShowAllLogs((v) => !v)}>
+                {showAllLogs ? 'Mostrar menos' : `Ver todos (${logsPassados.length})`}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

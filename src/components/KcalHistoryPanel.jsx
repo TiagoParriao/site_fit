@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
 import { fetchGroupMetabolicHistory } from '../lib/metabolicGroupHistory'
 import { colorForUser } from '../lib/avatarColor'
+import { AnimalAvatar } from './AnimalIcons'
 import PeriodSelector from './PeriodSelector'
 import KcalHistoryChart from './KcalHistoryChart'
 import MetabolicHistoryChart from './MetabolicHistoryChart'
@@ -14,20 +15,12 @@ export default function KcalHistoryPanel({ group, members }) {
   const [start, setStart] = useState(todayISO())
   const [end, setEnd] = useState(todayISO())
   const [result, setResult] = useState({ rows: [], chartDates: [], chartSeries: [] })
-  const [editingTitle, setEditingTitle] = useState(false)
-  const [tituloDraft, setTituloDraft] = useState('')
-  const [tituloAtual, setTituloAtual] = useState(group?.kcal_titulo || 'Histórico de calorias')
-  const [error, setError] = useState('')
 
   const [metabolicPreset, setMetabolicPreset] = useState('semana')
   const [metabolicDate, setMetabolicDate] = useState(todayISO())
   const [metabolicStart, setMetabolicStart] = useState(todayISO())
   const [metabolicEnd, setMetabolicEnd] = useState(todayISO())
   const [metabolicResult, setMetabolicResult] = useState({ chartDates: [], chartSeries: [], membrosSemDados: [] })
-
-  useEffect(() => {
-    setTituloAtual(group?.kcal_titulo || 'Histórico de calorias')
-  }, [group?.kcal_titulo])
 
   const load = useCallback(async () => {
     const data = await fetchGroupKcalHistory(supabase, members, preset, { date, start, end })
@@ -51,46 +44,12 @@ export default function KcalHistoryPanel({ group, members }) {
     loadMetabolic()
   }, [loadMetabolic])
 
-  async function handleSaveTitle(e) {
-    e.preventDefault()
-    setError('')
-    const { error } = await supabase.from('groups').update({ kcal_titulo: tituloDraft }).eq('id', group.id)
-    if (error) {
-      setError(error.message)
-      return
-    }
-    setTituloAtual(tituloDraft)
-    setEditingTitle(false)
-  }
-
   if (!group) return null
 
   return (
     <div className="dashboard-insights-grid">
       <section className="card kcal-history-card">
-      {editingTitle ? (
-        <form className="form-actions" onSubmit={handleSaveTitle}>
-          <input value={tituloDraft} onChange={(e) => setTituloDraft(e.target.value)} required />
-          <button type="submit">Salvar</button>
-          <button type="button" className="link-button" onClick={() => setEditingTitle(false)}>
-            Cancelar
-          </button>
-        </form>
-      ) : (
-        <div className="form-actions">
-          <h2>{tituloAtual}</h2>
-          <button
-            className="link-button"
-            onClick={() => {
-              setTituloDraft(tituloAtual)
-              setEditingTitle(true)
-            }}
-          >
-            editar título
-          </button>
-        </div>
-      )}
-      {error && <p className="error">{error}</p>}
+      <h2>Histórico de Calorias</h2>
 
       <PeriodSelector
         preset={preset}
@@ -228,18 +187,58 @@ export default function KcalHistoryPanel({ group, members }) {
               {metabolicResult.membrosSemDados.join(', ')} ainda não {metabolicResult.membrosSemDados.length > 1 ? 'definiram' : 'definiu'} sexo, peso ou altura suficientes pra calcular a TMB.
             </p>
           )}
-          {metabolicResult.chartSeries.map((s) => {
-            const acumulado = s.values.reduce((sum, v) => sum + v, 0)
-            return (
-              <div key={s.user_id} className="metabolic-balance">
-                <p className={`kcal-saldo${acumulado < 0 ? ' negative' : ''}`}>
-                  {s.nome} — gasto calórico de {s.totalGet} kcal, {acumulado >= 0 ? 'acumulou' : 'ultrapassou em'}{' '}
-                  {Math.abs(Math.round(acumulado))} kcal{acumulado >= 0 ? ' a menos do que gastou' : ' do que gastou'}
-                </p>
-                <p className="kcal-saldo">Gasto estimado para hoje será {Math.round(s.getHoje)} kcal</p>
-              </div>
-            )
-          })}
+          {metabolicResult.chartSeries.length > 0 && (
+            <div className="member-report-grid">
+              {metabolicResult.chartSeries.map((s) => {
+                const acumulado = s.values.reduce((sum, v) => sum + v, 0)
+                const positivo = acumulado >= 0
+                const pct = Math.min(100, Math.max(6, (Math.abs(acumulado) / Math.max(s.totalGet, 1)) * 100))
+                return (
+                  <div key={s.user_id} className="member-report-card">
+                    <div className="member-report-head">
+                      <span
+                        className="member-report-avatar"
+                        style={{ '--member-color': colorForUser(s.user_id, s.cor) }}
+                      >
+                        <AnimalAvatar avatarKey={s.avatarKey} size={28} />
+                      </span>
+                      <div>
+                        <span className="member-report-name">{s.nome}</span>
+                        <span className="member-report-status">Membro ativo</span>
+                      </div>
+                    </div>
+
+                    <div className="member-report-stats">
+                      <div className="member-report-stat">
+                        <span>Gasto total</span>
+                        <strong>{Math.round(s.totalGet).toLocaleString('pt-BR')} kcal</strong>
+                      </div>
+                      <div className="member-report-stat">
+                        <span>Gasto estimado hoje</span>
+                        <strong>{Math.round(s.getHoje).toLocaleString('pt-BR')} kcal</strong>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="member-report-progress-head">
+                        <span>Saldo acumulado</span>
+                        <strong>{Math.abs(Math.round(acumulado)).toLocaleString('pt-BR')} kcal</strong>
+                      </div>
+                      <div className="calorie-progress-track">
+                        <div
+                          className={`calorie-progress-fill${positivo ? '' : ' over'}`}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                      <span className={`member-report-badge${positivo ? '' : ' negative'}`}>
+                        {positivo ? 'Saldo positivo' : 'Saldo negativo'}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
       </section>
     </div>
   )

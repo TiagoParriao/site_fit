@@ -548,3 +548,16 @@ alter table public.finance_logs add column if not exists pagamento_id uuid refer
 -- idade já existiam em profiles (altura_cm, data_nascimento).
 
 alter table public.profiles add column if not exists sexo text check (sexo in ('M', 'F'));
+
+-- ============ MIGRAÇÃO: permite editar/excluir desafio do grupo ============
+-- A migração anterior (desafio de grupo) derrubou "main_goals_update_self" e
+-- "main_goals_delete_self" e so recriou select/insert. Sem policy de update,
+-- o Postgres RLS aceita o UPDATE mas silenciosamente afeta 0 linhas (sem
+-- erro) — por isso "editar desafio atual" nao fazia nada. Qualquer membro do
+-- grupo pode editar/excluir, mesmo padrao ja usado em "groups_update_member".
+
+create policy "main_goals_update_group_member" on public.main_goals
+  for update using (public.is_group_member(group_id));
+
+create policy "main_goals_delete_group_member" on public.main_goals
+  for delete using (public.is_group_member(group_id));
