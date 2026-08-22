@@ -2,7 +2,7 @@ import { useState } from 'react'
 import CaloriesSection from './CaloriesSection'
 import ExerciseSection from './ExerciseSection'
 
-export default function TrilhaSection() {
+export default function TrilhaSection({ onDataChange }) {
   const [tipo, setTipo] = useState('caloria')
 
   return (
@@ -26,7 +26,11 @@ export default function TrilhaSection() {
         </button>
       </div>
       </div>
-      {tipo === 'caloria' ? <CaloriesSection /> : <ExerciseSection />}
+      {tipo === 'caloria' ? (
+        <CaloriesSection onDataChange={onDataChange} />
+      ) : (
+        <ExerciseSection onDataChange={onDataChange} />
+      )}
     </div>
   )
 }

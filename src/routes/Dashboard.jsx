@@ -11,6 +11,9 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [group, setGroup] = useState(null)
   const [members, setMembers] = useState([])
+  const [refreshKey, setRefreshKey] = useState(0)
+
+  const bumpRefresh = useCallback(() => setRefreshKey((k) => k + 1), [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -72,9 +75,9 @@ export default function Dashboard() {
 
       <MainGoalSection group={group} />
 
-      {group && <KcalHistoryPanel group={group} members={members} />}
+      {group && <KcalHistoryPanel group={group} members={members} refreshKey={refreshKey} />}
 
-      <TrilhaSection />
+      <TrilhaSection onDataChange={bumpRefresh} />
     </div>
   )
 }

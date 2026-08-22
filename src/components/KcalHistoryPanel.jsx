@@ -9,7 +9,7 @@ import KcalHistoryChart from './KcalHistoryChart'
 import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { todayISO } from '../lib/dates'
 
-export default function KcalHistoryPanel({ group, members }) {
+export default function KcalHistoryPanel({ group, members, refreshKey }) {
   const [preset, setPreset] = useState('semana')
   const [date, setDate] = useState(todayISO())
   const [start, setStart] = useState(todayISO())
@@ -25,7 +25,7 @@ export default function KcalHistoryPanel({ group, members }) {
   const load = useCallback(async () => {
     const data = await fetchGroupKcalHistory(supabase, members, preset, { date, start, end })
     setResult(data)
-  }, [members, preset, date, start, end])
+  }, [members, preset, date, start, end, refreshKey])
 
   useEffect(() => {
     load()
@@ -38,7 +38,7 @@ export default function KcalHistoryPanel({ group, members }) {
       end: metabolicEnd,
     })
     setMetabolicResult(data)
-  }, [members, metabolicPreset, metabolicDate, metabolicStart, metabolicEnd])
+  }, [members, metabolicPreset, metabolicDate, metabolicStart, metabolicEnd, refreshKey])
 
   useEffect(() => {
     loadMetabolic()

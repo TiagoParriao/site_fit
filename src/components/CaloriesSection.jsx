@@ -11,7 +11,7 @@ function nowHHMM() {
   return new Date().toTimeString().slice(0, 5)
 }
 
-export default function CaloriesSection() {
+export default function CaloriesSection({ onDataChange }) {
   const { user, profile, updateProfile } = useAuth()
   const [data, setData] = useState(todayISO())
   const [entries, setEntries] = useState([])
@@ -107,12 +107,14 @@ export default function CaloriesSection() {
     setTipoRefeicao(suggestMealType(nowHHMM()))
     load()
     loadMetabolic()
+    onDataChange?.()
   }
 
   async function handleDelete(id) {
     await supabase.from('calorie_logs').delete().eq('id', id)
     load()
     loadMetabolic()
+    onDataChange?.()
   }
 
   function startEdit(entry) {
@@ -136,6 +138,7 @@ export default function CaloriesSection() {
     setEditingId(null)
     load()
     loadMetabolic()
+    onDataChange?.()
   }
 
   const total = entries.reduce((sum, e) => sum + e.kcal, 0)

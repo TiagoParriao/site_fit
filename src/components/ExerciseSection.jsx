@@ -7,7 +7,7 @@ import { fetchExerciseHistory } from '../lib/exerciseHistory'
 import { todayISO } from '../lib/dates'
 import { PencilIcon, TrashIcon } from './icons'
 
-export default function ExerciseSection() {
+export default function ExerciseSection({ onDataChange }) {
   const { user } = useAuth()
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,12 +80,14 @@ export default function ExerciseSection() {
     setData(todayISO())
     load()
     loadResumo()
+    onDataChange?.()
   }
 
   async function handleDelete(id) {
     await supabase.from('exercise_logs').delete().eq('id', id)
     load()
     loadResumo()
+    onDataChange?.()
   }
 
   function startEdit(entry) {
@@ -109,6 +111,7 @@ export default function ExerciseSection() {
     setEditingId(null)
     load()
     loadResumo()
+    onDataChange?.()
   }
 
   return (
