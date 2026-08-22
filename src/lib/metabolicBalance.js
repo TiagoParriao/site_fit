@@ -8,17 +8,6 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
   if (!profile?.sexo || !profile?.altura_cm || !profile?.data_nascimento) return null
 
   const hoje = todayISO()
-
-  const { data: pesoRow } = await supabase
-    .from('weight_logs')
-    .select('peso_kg')
-    .eq('user_id', userId)
-    .lte('data', hoje)
-    .order('data', { ascending: false })
-    .limit(1)
-    .maybeSingle()
-  if (!pesoRow) return null
-
   const ontem = addDaysISO(hoje, -1)
   // Não faz sentido contar dias de antes da conta existir como "deixou de consumir"
   // a GET inteira — não é que a pessoa não comeu, é que nem tinha onde lançar ainda.
@@ -26,10 +15,22 @@ export async function fetchWeeklyMetabolicBalance(supabase, userId, profile) {
   let start = addDaysISO(ontem, -6)
   if (criadoEm && criadoEm > start) start = criadoEm
 
-  const [{ data: caloriaRows }, { data: exercicioRows }] = await Promise.all([
+  // As três buscas são independentes entre si (nenhuma usa o resultado da
+  // outra) — rodam em paralelo em vez de esperar o peso pra só então buscar
+  // calorias/exercício.
+  const [{ data: pesoRow }, { data: caloriaRows }, { data: exercicioRows }] = await Promise.all([
+    supabase
+      .from('weight_logs')
+      .select('peso_kg')
+      .eq('user_id', userId)
+      .lte('data', hoje)
+      .order('data', { ascending: false })
+      .limit(1)
+      .maybeSingle(),
     supabase.from('calorie_logs').select('kcal, data').eq('user_id', userId).gte('data', start).lte('data', hoje),
     supabase.from('exercise_logs').select('kcal_gasta, data').eq('user_id', userId).gte('data', start).lte('data', hoje),
   ])
+  if (!pesoRow) return null
 
   const idade = calcularIdade(profile.data_nascimento, hoje)
   const tmb = calcularTMB({

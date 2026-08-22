@@ -27,6 +27,10 @@ export default function Dashboard() {
 
     const activeGroup = memberships?.[0]?.groups ?? null
     setGroup(activeGroup)
+    // Libera a tela assim que sabemos se tem grupo ou não — o Desafio e a
+    // Minha trilha não precisam da lista de membros pra aparecer, então não
+    // faz sentido travar a página inteira esperando essa segunda busca.
+    setLoading(false)
 
     if (activeGroup) {
       const { data: groupMembers } = await supabase
@@ -48,8 +52,6 @@ export default function Dashboard() {
     } else {
       setMembers([])
     }
-
-    setLoading(false)
   }, [user.id])
 
   useEffect(() => {
