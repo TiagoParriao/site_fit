@@ -12,7 +12,7 @@ const WATER_PRESETS = [
   { ml: 1000, label: '1 litro' },
 ]
 
-export default function WaterSection() {
+export default function WaterSection({ onDataChange }) {
   const { user, profile, updateProfile } = useAuth()
   const [data, setData] = useState(todayISO())
   const [entries, setEntries] = useState([])
@@ -65,6 +65,7 @@ export default function WaterSection() {
       return
     }
     load()
+    onDataChange?.()
   }
 
   async function handleAdd(e) {
@@ -77,6 +78,7 @@ export default function WaterSection() {
   async function handleDelete(id) {
     await supabase.from('water_logs').delete().eq('id', id)
     load()
+    onDataChange?.()
   }
 
   function startEdit(entry) {
@@ -93,6 +95,7 @@ export default function WaterSection() {
     }
     setEditingId(null)
     load()
+    onDataChange?.()
   }
 
   const totalMl = entries.reduce((sum, e) => sum + e.ml, 0)

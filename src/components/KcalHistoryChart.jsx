@@ -9,18 +9,25 @@ const PADDING_BOTTOM = 34
 const GROUP_GAP = 30
 const BAR_GAP = 8
 const BAR_WIDTH = 20
-const STEP = 200
 
 const formatKcal = (value) => new Intl.NumberFormat('pt-BR').format(value)
 
-export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem registros de calorias nesse período.' }) {
+export default function KcalHistoryChart({
+  dates,
+  series,
+  emptyMessage = 'Sem registros de calorias nesse período.',
+  unit = 'kcal',
+  formatValue = formatKcal,
+  step = 200,
+  ariaLabel = 'Calorias por dia e por membro',
+}) {
   if (!dates || dates.length === 0 || !series || series.length === 0) {
     return <p className="empty-state">{emptyMessage}</p>
   }
 
   const maxKcal = Math.max(...series.flatMap((s) => s.values), 1)
-  const top = niceMax(maxKcal, STEP)
-  const ticks = axisTicks(top, STEP)
+  const top = niceMax(maxKcal, step)
+  const ticks = axisTicks(top, step)
   const plotHeight = HEIGHT - PADDING_TOP - PADDING_BOTTOM
 
   const groupWidth = series.length * BAR_WIDTH + (series.length - 1) * BAR_GAP
@@ -30,7 +37,7 @@ export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem re
 
   return (
     <div className="kcal-chart-scroll">
-      <svg className="kcal-chart" viewBox={`0 0 ${width} ${HEIGHT}`} width={width} role="img" aria-label="Calorias por dia e por membro">
+      <svg className="kcal-chart" viewBox={`0 0 ${width} ${HEIGHT}`} width={width} role="img" aria-label={ariaLabel}>
         {ticks.map((tick) => (
           <g key={tick}>
             <line x1={PADDING_LEFT} y1={scaleY(tick)} x2={width - PADDING_RIGHT} y2={scaleY(tick)} className="chart-axis-line" />
@@ -52,11 +59,11 @@ export default function KcalHistoryChart({ dates, series, emptyMessage = 'Sem re
                 return (
                   <g key={s.user_id}>
                     <rect x={x} y={y} width={BAR_WIDTH} height={barHeight} fill={colorForUser(s.user_id, s.cor)} rx={2}>
-                      <title>{`${s.nome}: ${value} kcal`}</title>
+                      <title>{`${s.nome}: ${formatValue(value)}${unit ? ' ' + unit : ''}`}</title>
                     </rect>
                     {value > 0 && (
                       <text x={x + BAR_WIDTH / 2} y={Math.max(y - 5, 11)} textAnchor="middle" className="chart-bar-value">
-                        {formatKcal(value)}
+                        {formatValue(value)}
                       </text>
                     )}
                   </g>

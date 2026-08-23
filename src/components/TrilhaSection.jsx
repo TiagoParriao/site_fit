@@ -36,7 +36,7 @@ export default function TrilhaSection({ onDataChange }) {
       </div>
       {tipo === 'caloria' && <CaloriesSection onDataChange={onDataChange} />}
       {tipo === 'exercicio' && <ExerciseSection onDataChange={onDataChange} />}
-      {tipo === 'agua' && <WaterSection />}
+      {tipo === 'agua' && <WaterSection onDataChange={onDataChange} />}
     </div>
   )
 }
