@@ -561,3 +561,33 @@ create policy "main_goals_update_group_member" on public.main_goals
 
 create policy "main_goals_delete_group_member" on public.main_goals
   for delete using (public.is_group_member(group_id));
+
+-- ============ MIGRAÇÃO: registro de água ============
+-- Meta diária em ml em profiles (mesmo padrão de meta_kcal_diaria). Visível
+-- pro grupo, igual peso/calorias/exercício (não é dado financeiro).
+
+alter table public.profiles add column if not exists meta_agua_ml integer not null default 2000;
+
+create table if not exists public.water_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  ml integer not null check (ml > 0),
+  data date not null default current_date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists water_logs_user_data_idx on public.water_logs (user_id, data);
+
+alter table public.water_logs enable row level security;
+
+create policy "water_logs_select_self_or_group" on public.water_logs
+  for select using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "water_logs_insert_self" on public.water_logs
+  for insert with check (user_id = auth.uid());
+
+create policy "water_logs_update_self" on public.water_logs
+  for update using (user_id = auth.uid());
+
+create policy "water_logs_delete_self" on public.water_logs
+  for delete using (user_id = auth.uid());

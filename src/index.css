@@ -899,6 +899,29 @@ button:disabled {
   color: var(--danger);
 }
 
+.water-quick-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.water-quick-add button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.water-quick-add button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .metabolic-balance {
   background: var(--bg);
   border-radius: 12px;

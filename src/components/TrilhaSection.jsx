@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CaloriesSection from './CaloriesSection'
 import ExerciseSection from './ExerciseSection'
+import WaterSection from './WaterSection'
 
 export default function TrilhaSection({ onDataChange }) {
   const [tipo, setTipo] = useState('caloria')
@@ -24,13 +25,18 @@ export default function TrilhaSection({ onDataChange }) {
         >
           Exercício
         </button>
+        <button
+          type="button"
+          className={`section-tab${tipo === 'agua' ? ' active' : ''}`}
+          onClick={() => setTipo('agua')}
+        >
+          Água
+        </button>
       </div>
       </div>
-      {tipo === 'caloria' ? (
-        <CaloriesSection onDataChange={onDataChange} />
-      ) : (
-        <ExerciseSection onDataChange={onDataChange} />
-      )}
+      {tipo === 'caloria' && <CaloriesSection onDataChange={onDataChange} />}
+      {tipo === 'exercicio' && <ExerciseSection onDataChange={onDataChange} />}
+      {tipo === 'agua' && <WaterSection />}
     </div>
   )
 }
