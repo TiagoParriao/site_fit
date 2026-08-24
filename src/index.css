@@ -1139,6 +1139,12 @@ button:disabled {
   gap: 16px;
 }
 
+.profile-edit-block {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
 .profile-summary-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
