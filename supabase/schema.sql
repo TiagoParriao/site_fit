@@ -591,3 +591,40 @@ create policy "water_logs_update_self" on public.water_logs
 
 create policy "water_logs_delete_self" on public.water_logs
   for delete using (user_id = auth.uid());
+
+-- ============ MIGRAÇÃO: planejamento (pastas/itens) ============
+-- Árvore genérica pra montar planejamento de rotina/exercícios/água/cardápio
+-- por pessoa: cada nó é uma "pasta" (categoria/subcategoria) ou um "item"
+-- (linha dentro dela), com parent_id apontando pro pai (null = pasta de
+-- topo). texto é o nome/descrição, valor é um campo livre opcional (horário,
+-- séries, quantidade...). ordem controla a posição entre os irmãos.
+-- Diferente do resto do app: aqui QUALQUER membro do grupo pode ver E editar
+-- o planejamento de qualquer outro membro (é um quadro colaborativo, tipo
+-- alguém montando o plano de outra pessoa), não só o dono.
+
+create table if not exists public.plan_nodes (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  parent_id uuid references public.plan_nodes (id) on delete cascade,
+  tipo text not null check (tipo in ('pasta', 'item')),
+  texto text not null,
+  valor text,
+  ordem integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists plan_nodes_user_parent_idx on public.plan_nodes (user_id, parent_id, ordem);
+
+alter table public.plan_nodes enable row level security;
+
+create policy "plan_nodes_select_group" on public.plan_nodes
+  for select using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "plan_nodes_insert_group" on public.plan_nodes
+  for insert with check (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "plan_nodes_update_group" on public.plan_nodes
+  for update using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+create policy "plan_nodes_delete_group" on public.plan_nodes
+  for delete using (user_id = auth.uid() or public.shares_group_with(user_id));

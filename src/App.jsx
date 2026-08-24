@@ -8,6 +8,7 @@ import Dashboard from './routes/Dashboard'
 import Weight from './routes/Weight'
 import Financas from './routes/Financas'
 import Group from './routes/Group'
+import Planning from './routes/Planning'
 
 function AppLayout({ children }) {
   const { session } = useAuth()
@@ -54,6 +55,14 @@ function AppRoutes() {
           element={
             <ProtectedRoute>
               <Group />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/planejamento"
+          element={
+            <ProtectedRoute>
+              <Planning />
             </ProtectedRoute>
           }
         />
