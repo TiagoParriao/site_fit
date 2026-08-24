@@ -114,7 +114,8 @@ export default function Weight() {
     const pesoBase = logsAte.length > 0 ? logsAte[logsAte.length - 1].peso_kg : sortedAsc[0].peso_kg
     const querBaixar = goal.peso_meta_kg <= pesoBase
     const atingida = querBaixar ? pesoAtual <= goal.peso_meta_kg : pesoAtual >= goal.peso_meta_kg
-    return { numero: goals.length, goal, atingida }
+    const restante = Math.abs(pesoAtual - goal.peso_meta_kg)
+    return { numero: goals.length, goal, atingida, restante }
   }, [goals, logs])
 
   if (loading) return <div className="page-loading">Carregando...</div>
@@ -142,7 +143,11 @@ export default function Weight() {
             <p className="weight-goal-real">
               Meta {String(goalStatus.numero).padStart(2, '0')}: <strong>{goalStatus.goal.peso_meta_kg}kg</strong> até{' '}
               {new Date(`${goalStatus.goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}
-              {goalStatus.atingida && <span className="goal-achieved-badge"> · batida ✓</span>}
+              {goalStatus.atingida ? (
+                <span className="goal-achieved-badge"> · batida ✓</span>
+              ) : (
+                <> · faltam {goalStatus.restante.toFixed(1)}kg</>
+              )}
             </p>
           )}
         </div>
@@ -154,7 +159,11 @@ export default function Weight() {
         <WeightHistoryChart
           logs={logs}
           goalKg={goalStatus?.goal.peso_meta_kg}
-          goalLabel={goalStatus ? `Meta ${String(goalStatus.numero).padStart(2, '0')} · ${goalStatus.goal.peso_meta_kg}kg` : undefined}
+          goalLabel={
+            goalStatus
+              ? `Meta ${String(goalStatus.numero).padStart(2, '0')} · ${goalStatus.goal.peso_meta_kg}kg${goalStatus.atingida ? '' : ` (faltam ${goalStatus.restante.toFixed(1)}kg)`}`
+              : undefined
+          }
           goalAchieved={goalStatus?.atingida}
         />
       </div>
@@ -180,7 +189,7 @@ export default function Weight() {
             <p className="info">
               Meta {String(goalStatus.numero).padStart(2, '0')} atual: {goalStatus.goal.peso_meta_kg}kg até{' '}
               {new Date(`${goalStatus.goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}
-              {goalStatus.atingida && ' — batida! 🎉'}
+              {goalStatus.atingida ? ' — batida! 🎉' : ` — faltam ${goalStatus.restante.toFixed(1)}kg`}
             </p>
           )}
           <label>
