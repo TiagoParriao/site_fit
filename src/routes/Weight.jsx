@@ -9,7 +9,7 @@ import { PencilIcon, TrashIcon } from '../components/icons'
 export default function Weight() {
   const { user } = useAuth()
   const [logs, setLogs] = useState([])
-  const [goal, setGoal] = useState(null)
+  const [goals, setGoals] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -24,18 +24,12 @@ export default function Weight() {
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [logsRes, goalRes] = await Promise.all([
+    const [logsRes, goalsRes] = await Promise.all([
       supabase.from('weight_logs').select('*').eq('user_id', user.id).order('data', { ascending: false }),
-      supabase
-        .from('weight_goals')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(),
+      supabase.from('weight_goals').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
     ])
     if (logsRes.data) setLogs(logsRes.data)
-    if (goalRes.data) setGoal(goalRes.data)
+    if (goalsRes.data) setGoals(goalsRes.data)
     setLoading(false)
   }, [user.id])
 
@@ -106,6 +100,23 @@ export default function Weight() {
     return { delta, desde: primeiro.data }
   }, [logs])
 
+  // Meta em uso é sempre a mais recente; numeramos pela ordem de criação
+  // (Meta 01, Meta 02...) e checamos se o peso já cruzou ela — pra saber
+  // se o pedido é de emagrecer ou engordar, comparamos com o peso mais
+  // próximo registrado até a data em que a meta foi definida.
+  const goalStatus = useMemo(() => {
+    if (goals.length === 0 || logs.length === 0) return null
+    const goal = goals[goals.length - 1]
+    const sortedAsc = [...logs].sort((a, b) => new Date(a.data) - new Date(b.data))
+    const pesoAtual = sortedAsc[sortedAsc.length - 1].peso_kg
+    const goalDateISO = goal.created_at.slice(0, 10)
+    const logsAte = sortedAsc.filter((l) => l.data <= goalDateISO)
+    const pesoBase = logsAte.length > 0 ? logsAte[logsAte.length - 1].peso_kg : sortedAsc[0].peso_kg
+    const querBaixar = goal.peso_meta_kg <= pesoBase
+    const atingida = querBaixar ? pesoAtual <= goal.peso_meta_kg : pesoAtual >= goal.peso_meta_kg
+    return { numero: goals.length, goal, atingida }
+  }, [goals, logs])
+
   if (loading) return <div className="page-loading">Carregando...</div>
 
   return (
@@ -127,14 +138,25 @@ export default function Weight() {
               {new Date(`${diff.desde}T00:00:00`).toLocaleDateString('pt-BR')}
             </p>
           )}
-          {goal && <p className="weight-goal-real">Meta: <strong>{goal.peso_meta_kg}kg</strong> até {new Date(`${goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}</p>}
+          {goalStatus && (
+            <p className="weight-goal-real">
+              Meta {String(goalStatus.numero).padStart(2, '0')}: <strong>{goalStatus.goal.peso_meta_kg}kg</strong> até{' '}
+              {new Date(`${goalStatus.goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}
+              {goalStatus.atingida && <span className="goal-achieved-badge"> · batida ✓</span>}
+            </p>
+          )}
         </div>
       <div className="card weight-chart-card-real">
         <div className="card-heading-real"><div><span className="section-kicker">Histórico</span><h2>Evolução do peso</h2><p>Acompanhe sua tendência ao longo do tempo.</p></div></div>
         {diff && (
           <span className={`weight-diff weight-diff-chart${diff.delta > 0 ? ' up' : ''}`}>{diff.delta > 0 ? '+' : ''}{diff.delta.toFixed(1)} kg</span>
         )}
-        <WeightHistoryChart logs={logs} goalKg={goal?.peso_meta_kg} />
+        <WeightHistoryChart
+          logs={logs}
+          goalKg={goalStatus?.goal.peso_meta_kg}
+          goalLabel={goalStatus ? `Meta ${String(goalStatus.numero).padStart(2, '0')} · ${goalStatus.goal.peso_meta_kg}kg` : undefined}
+          goalAchieved={goalStatus?.atingida}
+        />
       </div>
       </div>
 
@@ -153,10 +175,12 @@ export default function Weight() {
         </form>
 
         <form className="card" onSubmit={handleSetGoal}>
-          <h2>Meta de peso</h2>
-          {goal && (
+          <h2>{goalStatus?.atingida ? 'Próxima meta' : 'Meta de peso'}</h2>
+          {goalStatus && (
             <p className="info">
-              Meta atual: {goal.peso_meta_kg}kg até {new Date(goal.data_alvo).toLocaleDateString('pt-BR')}
+              Meta {String(goalStatus.numero).padStart(2, '0')} atual: {goalStatus.goal.peso_meta_kg}kg até{' '}
+              {new Date(`${goalStatus.goal.data_alvo}T00:00:00`).toLocaleDateString('pt-BR')}
+              {goalStatus.atingida && ' — batida! 🎉'}
             </p>
           )}
           <label>
@@ -167,7 +191,7 @@ export default function Weight() {
             Data alvo
             <input type="date" value={metaData} onChange={(e) => setMetaData(e.target.value)} required />
           </label>
-          <button type="submit">Definir meta</button>
+          <button type="submit">{goalStatus?.atingida ? 'Definir próxima meta' : 'Definir meta'}</button>
         </form>
       </div>
 
@@ -212,7 +236,7 @@ export default function Weight() {
                 </tr>
               ) : (
                 <tr key={log.id}>
-                  <td data-label="Data">{new Date(log.data).toLocaleDateString('pt-BR')}</td>
+                  <td data-label="Data">{new Date(`${log.data}T00:00:00`).toLocaleDateString('pt-BR')}</td>
                   <td data-label="Peso">{log.peso_kg}kg</td>
                   <td>
                     <span className="row-actions">

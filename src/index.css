@@ -438,6 +438,16 @@ button:disabled {
   fill: var(--text-muted);
 }
 
+.chart-delta-label {
+  font-size: 9px;
+  font-weight: 700;
+  fill: var(--success);
+}
+
+.chart-delta-label.up {
+  fill: var(--danger);
+}
+
 /* Member color picker (Grupo page) */
 
 .member-color-row {
@@ -1023,6 +1033,11 @@ button:disabled {
 
 .weight-diff.up {
   color: var(--danger);
+}
+
+.goal-achieved-badge {
+  color: var(--success);
+  font-weight: 700;
 }
 
 /* Challenge history */
