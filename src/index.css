@@ -1630,7 +1630,21 @@ input:focus, select:focus { outline: 2px solid #f3b6a5; }
 
 .plan-tree-card { gap: 14px; }
 
-.plan-new-root-form { margin-bottom: 4px; }
+.plan-tree-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.plan-new-root-form { flex: 1; margin-bottom: 4px; }
+
+.plan-tree-expand-buttons {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
 
 .plan-tree-root {
   display: flex;

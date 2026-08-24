@@ -13,6 +13,7 @@ export default function Planning() {
   const [nodes, setNodes] = useState([])
   const [loading, setLoading] = useState(true)
   const [novaPasta, setNovaPasta] = useState('')
+  const [expandCommand, setExpandCommand] = useState(null)
 
   const loadMembers = useCallback(async () => {
     const { data: memberships } = await supabase
@@ -95,10 +96,22 @@ export default function Planning() {
       </div>
 
       <div className="card plan-tree-card">
-        <form className="plan-node-add-form plan-new-root-form" onSubmit={handleAddPasta}>
-          <input value={novaPasta} onChange={(e) => setNovaPasta(e.target.value)} placeholder="Nova pasta (ex: Exercícios, Rotina, Cardápio)" required />
-          <button type="submit">Adicionar pasta</button>
-        </form>
+        <div className="plan-tree-toolbar">
+          <form className="plan-node-add-form plan-new-root-form" onSubmit={handleAddPasta}>
+            <input value={novaPasta} onChange={(e) => setNovaPasta(e.target.value)} placeholder="Nova pasta (ex: Exercícios, Rotina, Cardápio)" required />
+            <button type="submit">Adicionar pasta</button>
+          </form>
+          {tree.length > 0 && (
+            <div className="plan-tree-expand-buttons">
+              <button type="button" className="link-button" onClick={() => setExpandCommand({ value: true, ts: Date.now() })}>
+                Expandir tudo
+              </button>
+              <button type="button" className="link-button" onClick={() => setExpandCommand({ value: false, ts: Date.now() })}>
+                Retrair tudo
+              </button>
+            </div>
+          )}
+        </div>
 
         {loading ? (
           <p>Carregando...</p>
@@ -107,7 +120,16 @@ export default function Planning() {
         ) : (
           <div className="plan-tree-root">
             {tree.map((node, i) => (
-              <PlanNode key={node.id} node={node} siblings={tree} index={i} ownerId={selectedUserId} onChange={loadNodes} depth={0} />
+              <PlanNode
+                key={node.id}
+                node={node}
+                siblings={tree}
+                index={i}
+                ownerId={selectedUserId}
+                onChange={loadNodes}
+                depth={0}
+                expandCommand={expandCommand}
+              />
             ))}
           </div>
         )}

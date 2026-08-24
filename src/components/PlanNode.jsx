@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { PencilIcon, TrashIcon } from './icons'
 
-export default function PlanNode({ node, siblings, index, ownerId, onChange, depth }) {
-  const [expanded, setExpanded] = useState(true)
+export default function PlanNode({ node, siblings, index, ownerId, onChange, depth, expandCommand }) {
+  const [expanded, setExpanded] = useState(false)
+
+  useEffect(() => {
+    if (expandCommand) setExpanded(expandCommand.value)
+  }, [expandCommand])
   const [editing, setEditing] = useState(false)
   const [texto, setTexto] = useState(node.texto)
   const [valor, setValor] = useState(node.valor ?? '')
@@ -117,7 +121,16 @@ export default function PlanNode({ node, siblings, index, ownerId, onChange, dep
       {isPasta && expanded && (
         <div className="plan-node-children">
           {node.children.map((child, i) => (
-            <PlanNode key={child.id} node={child} siblings={node.children} index={i} ownerId={ownerId} onChange={onChange} depth={depth + 1} />
+            <PlanNode
+              key={child.id}
+              node={child}
+              siblings={node.children}
+              index={i}
+              ownerId={ownerId}
+              onChange={onChange}
+              depth={depth + 1}
+              expandCommand={expandCommand}
+            />
           ))}
 
           {addingTipo ? (
