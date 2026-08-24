@@ -23,6 +23,7 @@ export default function WaterSection({ onDataChange }) {
 
   const [editingMeta, setEditingMeta] = useState(false)
   const [novaMetaLitros, setNovaMetaLitros] = useState('')
+  const [savingMeta, setSavingMeta] = useState(false)
 
   const [editingId, setEditingId] = useState(null)
   const [editMl, setEditMl] = useState('')
@@ -47,13 +48,17 @@ export default function WaterSection({ onDataChange }) {
 
   async function handleUpdateMeta(e) {
     e.preventDefault()
+    if (savingMeta) return
     setError('')
+    setSavingMeta(true)
     try {
       await updateProfile({ meta_agua_ml: Math.round(Number(novaMetaLitros) * 1000) })
       setNovaMetaLitros('')
       setEditingMeta(false)
     } catch (err) {
       setError(err.message)
+    } finally {
+      setSavingMeta(false)
     }
   }
 
@@ -122,8 +127,8 @@ export default function WaterSection({ onDataChange }) {
               required
             />
           </label>
-          <button type="submit">Salvar</button>
-          <button type="button" className="link-button" onClick={() => setEditingMeta(false)}>
+          <button type="submit" disabled={savingMeta}>{savingMeta ? 'Salvando...' : 'Salvar'}</button>
+          <button type="button" className="link-button" onClick={() => setEditingMeta(false)} disabled={savingMeta}>
             Cancelar
           </button>
         </form>

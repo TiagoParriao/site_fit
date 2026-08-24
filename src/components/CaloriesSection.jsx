@@ -25,6 +25,7 @@ export default function CaloriesSection({ onDataChange }) {
 
   const [editingMeta, setEditingMeta] = useState(false)
   const [novaMeta, setNovaMeta] = useState('')
+  const [savingMeta, setSavingMeta] = useState(false)
 
   const [editingId, setEditingId] = useState(null)
   const [editKcal, setEditKcal] = useState('')
@@ -37,6 +38,7 @@ export default function CaloriesSection({ onDataChange }) {
   const [metabolic, setMetabolic] = useState(null)
   const [editingSexo, setEditingSexo] = useState(false)
   const [novoSexo, setNovoSexo] = useState('M')
+  const [savingSexo, setSavingSexo] = useState(false)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -65,24 +67,32 @@ export default function CaloriesSection({ onDataChange }) {
 
   async function handleUpdateMeta(e) {
     e.preventDefault()
+    if (savingMeta) return
     setError('')
+    setSavingMeta(true)
     try {
       await updateProfile({ meta_kcal_diaria: Number(novaMeta) })
       setNovaMeta('')
       setEditingMeta(false)
     } catch (err) {
       setError(err.message)
+    } finally {
+      setSavingMeta(false)
     }
   }
 
   async function handleSetSexo(e) {
     e.preventDefault()
+    if (savingSexo) return
     setError('')
+    setSavingSexo(true)
     try {
       await updateProfile({ sexo: novoSexo })
       setEditingSexo(false)
     } catch (err) {
       setError(err.message)
+    } finally {
+      setSavingSexo(false)
     }
   }
 
@@ -166,8 +176,8 @@ export default function CaloriesSection({ onDataChange }) {
             Nova meta diária (kcal)
             <input type="number" value={novaMeta} onChange={(e) => setNovaMeta(e.target.value)} required />
           </label>
-          <button type="submit">Salvar</button>
-          <button type="button" className="link-button" onClick={() => setEditingMeta(false)}>
+          <button type="submit" disabled={savingMeta}>{savingMeta ? 'Salvando...' : 'Salvar'}</button>
+          <button type="button" className="link-button" onClick={() => setEditingMeta(false)} disabled={savingMeta}>
             Cancelar
           </button>
         </form>
@@ -198,8 +208,8 @@ export default function CaloriesSection({ onDataChange }) {
                   <option value="F">Feminino</option>
                 </select>
               </label>
-              <button type="submit">Salvar</button>
-              <button type="button" className="link-button" onClick={() => setEditingSexo(false)}>
+              <button type="submit" disabled={savingSexo}>{savingSexo ? 'Salvando...' : 'Salvar'}</button>
+              <button type="button" className="link-button" onClick={() => setEditingSexo(false)} disabled={savingSexo}>
                 Cancelar
               </button>
             </form>
