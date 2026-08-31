@@ -22,6 +22,9 @@ export default function MeasurementsSection() {
   const [editValor, setEditValor] = useState('')
   const [editData, setEditData] = useState('')
 
+  const [renomeando, setRenomeando] = useState(false)
+  const [novoNomeMedida, setNovoNomeMedida] = useState('')
+
   const load = useCallback(async () => {
     setLoading(true)
     const rows = await fetchMeasurements(supabase, user.id)
@@ -66,6 +69,33 @@ export default function MeasurementsSection() {
 
   async function handleDelete(id) {
     await supabase.from('measurement_logs').delete().eq('id', id)
+    load()
+  }
+
+  function startRenomear() {
+    setNovoNomeMedida(selectedNome)
+    setRenomeando(true)
+  }
+
+  async function handleRenomear(e) {
+    e.preventDefault()
+    setError('')
+    const nomeNovoLimpo = novoNomeMedida.trim()
+    if (!nomeNovoLimpo || nomeNovoLimpo === selectedNome) {
+      setRenomeando(false)
+      return
+    }
+    const { error } = await supabase
+      .from('measurement_logs')
+      .update({ nome: nomeNovoLimpo })
+      .eq('user_id', user.id)
+      .eq('nome', selectedNome)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setSelectedNome(nomeNovoLimpo)
+    setRenomeando(false)
     load()
   }
 
@@ -144,6 +174,33 @@ export default function MeasurementsSection() {
                 <span className="measurement-value">{m.valor_cm}cm</span>
               </button>
             ))}
+          </div>
+
+          <div className="measurement-history-head">
+            {renomeando ? (
+              <form onSubmit={handleRenomear} className="form-actions">
+                <label>
+                  Novo nome pra "{selectedNome}"
+                  <input
+                    value={novoNomeMedida}
+                    onChange={(e) => setNovoNomeMedida(e.target.value)}
+                    autoFocus
+                    required
+                  />
+                </label>
+                <button type="submit">Salvar</button>
+                <button type="button" className="link-button" onClick={() => setRenomeando(false)}>
+                  Cancelar
+                </button>
+              </form>
+            ) : (
+              <>
+                <h3>{selectedNome}</h3>
+                <button type="button" className="link-button" onClick={startRenomear}>
+                  Renomear
+                </button>
+              </>
+            )}
           </div>
 
           <MeasurementChart logs={historico} />
