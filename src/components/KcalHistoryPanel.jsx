@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
 import { fetchGroupMetabolicHistory } from '../lib/metabolicGroupHistory'
-import { fetchGroupWaterHistory } from '../lib/waterHistory'
+import { fetchGroupProteinHistory } from '../lib/proteinHistory'
 import { colorForUser } from '../lib/avatarColor'
 import { AnimalAvatar } from './AnimalIcons'
 import PeriodSelector from './PeriodSelector'
@@ -24,11 +24,11 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
   const [metabolicResult, setMetabolicResult] = useState({ chartDates: [], chartSeries: [], membrosSemDados: [] })
 
   const load = useCallback(async () => {
-    const [data, waterData] = await Promise.all([
+    const [data, proteinData] = await Promise.all([
       fetchGroupKcalHistory(supabase, members, preset, { date, start, end }),
-      fetchGroupWaterHistory(supabase, members, preset, { date, start, end }),
+      fetchGroupProteinHistory(supabase, members, preset, { date, start, end }),
     ])
-    setResult({ ...data, chartDatesAgua: waterData.chartDates, chartSeriesAgua: waterData.chartSeries })
+    setResult({ ...data, chartDatesProteina: proteinData.chartDates, chartSeriesProteina: proteinData.chartSeries })
   }, [members, preset, date, start, end, refreshKey])
 
   useEffect(() => {
@@ -158,28 +158,27 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
           <div className="group-exercise-section">
             <div className="group-chart-heading">
               <div>
-                <span className="section-kicker">Água do grupo</span>
-                <h3>Litros de água</h3>
+                <span className="section-kicker">Nutrição do grupo</span>
+                <h3>Proteína consumida</h3>
                 <p>Valores diários de todos os membros no período selecionado.</p>
               </div>
             </div>
             <KcalHistoryChart
-              dates={result.chartDatesAgua}
-              series={result.chartSeriesAgua}
-              emptyMessage="Sem água registrada nesse período."
-              unit=""
-              formatValue={(v) => `${v.toFixed(1).replace('.', ',')}L`}
-              step={1}
-              ariaLabel="Litros de água por dia e por membro"
+              dates={result.chartDatesProteina}
+              series={result.chartSeriesProteina}
+              emptyMessage="Sem proteína registrada nesse período."
+              unit="g"
+              step={50}
+              ariaLabel="Proteína consumida por dia e por membro"
             />
             <div className="exercise-member-grid">
-              {(result.chartSeriesAgua ?? []).map((s) => (
+              {(result.chartSeriesProteina ?? []).map((s) => (
                 <div className="exercise-member-card" key={s.user_id}>
                   <span className="chart-legend-swatch" style={{ background: colorForUser(s.user_id, s.cor) }} />
                   <div>
                     <strong>{s.nome}</strong>
                   </div>
-                  <b>{s.totalLitros.toFixed(1).replace('.', ',')}L</b>
+                  <b>{s.totalG}g</b>
                 </div>
               ))}
             </div>

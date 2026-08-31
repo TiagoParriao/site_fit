@@ -628,3 +628,15 @@ create policy "plan_nodes_update_group" on public.plan_nodes
 
 create policy "plan_nodes_delete_group" on public.plan_nodes
   for delete using (user_id = auth.uid() or public.shares_group_with(user_id));
+
+-- ============ MIGRAÇÃO: proteína, categoria de exercício ============
+-- Água saiu de uso (a tabela water_logs continua existindo, só não é mais
+-- referenciada no app). Proteína entra em calorie_logs. Exercício ganha
+-- categoria obrigatória (cardio/força) e subcategoria livre — sem tabela de
+-- referência: o autocomplete usa os valores já digitados pelo próprio usuário,
+-- igual já funciona pro nome das medidas corporais.
+
+alter table public.calorie_logs add column if not exists proteina_g numeric;
+
+alter table public.exercise_logs add column if not exists categoria text check (categoria in ('cardio', 'forca'));
+alter table public.exercise_logs add column if not exists subcategoria text;

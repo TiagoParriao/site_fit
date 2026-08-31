@@ -19,6 +19,7 @@ export default function CaloriesSection({ onDataChange }) {
   const [error, setError] = useState('')
 
   const [kcal, setKcal] = useState('')
+  const [proteina, setProteina] = useState('')
   const [descricao, setDescricao] = useState('')
   const [hora, setHora] = useState(nowHHMM())
   const [tipoRefeicao, setTipoRefeicao] = useState(suggestMealType(nowHHMM()))
@@ -29,6 +30,7 @@ export default function CaloriesSection({ onDataChange }) {
 
   const [editingId, setEditingId] = useState(null)
   const [editKcal, setEditKcal] = useState('')
+  const [editProteina, setEditProteina] = useState('')
   const [editDescricao, setEditDescricao] = useState('')
   const [editHora, setEditHora] = useState('')
   const [editTipoRefeicao, setEditTipoRefeicao] = useState('outro')
@@ -102,6 +104,7 @@ export default function CaloriesSection({ onDataChange }) {
     const { error } = await supabase.from('calorie_logs').insert({
       user_id: user.id,
       kcal: Number(kcal),
+      proteina_g: proteina === '' ? null : Number(proteina),
       descricao,
       data,
       hora,
@@ -112,6 +115,7 @@ export default function CaloriesSection({ onDataChange }) {
       return
     }
     setKcal('')
+    setProteina('')
     setDescricao('')
     setHora(nowHHMM())
     setTipoRefeicao(suggestMealType(nowHHMM()))
@@ -130,6 +134,7 @@ export default function CaloriesSection({ onDataChange }) {
   function startEdit(entry) {
     setEditingId(entry.id)
     setEditKcal(String(entry.kcal))
+    setEditProteina(entry.proteina_g == null ? '' : String(entry.proteina_g))
     setEditDescricao(entry.descricao || '')
     setEditHora(entry.hora?.slice(0, 5) || nowHHMM())
     setEditTipoRefeicao(entry.tipo_refeicao || 'outro')
@@ -139,7 +144,13 @@ export default function CaloriesSection({ onDataChange }) {
     setError('')
     const { error } = await supabase
       .from('calorie_logs')
-      .update({ kcal: Number(editKcal), descricao: editDescricao, hora: editHora, tipo_refeicao: editTipoRefeicao })
+      .update({
+        kcal: Number(editKcal),
+        proteina_g: editProteina === '' ? null : Number(editProteina),
+        descricao: editDescricao,
+        hora: editHora,
+        tipo_refeicao: editTipoRefeicao,
+      })
       .eq('id', id)
     if (error) {
       setError(error.message)
@@ -222,10 +233,14 @@ export default function CaloriesSection({ onDataChange }) {
       )}
 
       <form className="stacked-form" onSubmit={handleAdd}>
-        <div className="grid-2">
+        <div className="grid-3">
           <label>
             Kcal
             <input type="number" value={kcal} onChange={(e) => setKcal(e.target.value)} required />
+          </label>
+          <label>
+            Proteína (g, opcional)
+            <input type="number" step="0.1" value={proteina} onChange={(e) => setProteina(e.target.value)} />
           </label>
           <label>
             Hora
@@ -265,6 +280,7 @@ export default function CaloriesSection({ onDataChange }) {
                   <th>Hora</th>
                   <th>Refeição</th>
                   <th>Kcal</th>
+                  <th>Proteína</th>
                   <th>Descrição</th>
                   <th></th>
                 </tr>
@@ -273,7 +289,7 @@ export default function CaloriesSection({ onDataChange }) {
                 {entries.map((e) =>
                   editingId === e.id ? (
                     <tr key={e.id}>
-                      <td colSpan={5}>
+                      <td colSpan={6}>
                         <div className="inline-edit-row">
                           <label>
                             Hora
@@ -304,6 +320,15 @@ export default function CaloriesSection({ onDataChange }) {
                             />
                           </label>
                           <label>
+                            Proteína (g)
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={editProteina}
+                              onChange={(ev) => setEditProteina(ev.target.value)}
+                            />
+                          </label>
+                          <label>
                             Descrição (opcional)
                             <input value={editDescricao} onChange={(ev) => setEditDescricao(ev.target.value)} />
                           </label>
@@ -321,6 +346,7 @@ export default function CaloriesSection({ onDataChange }) {
                       <td data-label="Hora">{e.hora?.slice(0, 5)}</td>
                       <td data-label="Refeição">{mealTypeLabel(e.tipo_refeicao)}</td>
                       <td data-label="Kcal">{e.kcal}</td>
+                      <td data-label="Proteína">{e.proteina_g != null ? `${e.proteina_g}g` : '-'}</td>
                       <td data-label="Descrição">{e.descricao || '-'}</td>
                       <td>
                         <span className="row-actions">

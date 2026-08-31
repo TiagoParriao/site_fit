@@ -1,14 +1,18 @@
 import { resolvePeriodRange } from './periods'
 
-export async function fetchExerciseHistory(supabase, userId, preset, opts) {
+export async function fetchExerciseHistory(supabase, userId, preset, opts, subcategorias) {
   const { start, end } = resolvePeriodRange(preset, opts)
 
-  const { data } = await supabase
+  let query = supabase
     .from('exercise_logs')
     .select('data, minutos, kcal_gasta')
     .eq('user_id', userId)
     .gte('data', start)
     .lte('data', end)
+  if (subcategorias && subcategorias.length > 0) {
+    query = query.in('subcategoria', subcategorias)
+  }
+  const { data } = await query
 
   const rows = data ?? []
 
@@ -28,4 +32,23 @@ export async function fetchExerciseHistory(supabase, userId, preset, opts) {
   const mediaKcalGasta = totalSessoes > 0 ? Math.round(totalKcalGasta / totalSessoes) : 0
 
   return { start, end, days, totalSessoes, totalMinutos, totalKcalGasta, mediaMinutos, mediaKcalGasta }
+}
+
+export async function fetchKnownSubcategorias(supabase, userId) {
+  const { data } = await supabase
+    .from('exercise_logs')
+    .select('categoria, subcategoria')
+    .eq('user_id', userId)
+    .not('subcategoria', 'is', null)
+
+  const porCategoria = { cardio: new Set(), forca: new Set() }
+  for (const row of data ?? []) {
+    if (row.categoria && porCategoria[row.categoria] && row.subcategoria) {
+      porCategoria[row.categoria].add(row.subcategoria)
+    }
+  }
+  return {
+    cardio: [...porCategoria.cardio].sort(),
+    forca: [...porCategoria.forca].sort(),
+  }
 }

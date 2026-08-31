@@ -40,7 +40,6 @@ export default function MemberProfileModal({ member, onClose }) {
       sexo: profile?.sexo ?? 'M',
       altura_cm: profile?.altura_cm != null ? String(profile.altura_cm) : '',
       meta_kcal_diaria: profile?.meta_kcal_diaria != null ? String(profile.meta_kcal_diaria) : '',
-      meta_agua_litros: profile?.meta_agua_ml != null ? String(profile.meta_agua_ml / 1000) : '',
     })
     setProfileError('')
     setEditingProfile(true)
@@ -58,7 +57,6 @@ export default function MemberProfileModal({ member, onClose }) {
         sexo: form.sexo,
         altura_cm: form.altura_cm ? Number(form.altura_cm) : null,
         meta_kcal_diaria: Number(form.meta_kcal_diaria),
-        meta_agua_ml: Math.round(Number(form.meta_agua_litros) * 1000),
       })
       setEditingProfile(false)
     } catch (err) {
@@ -116,16 +114,6 @@ export default function MemberProfileModal({ member, onClose }) {
                   />
                 </label>
               </div>
-              <label>
-                Meta de água diária (litros)
-                <input
-                  type="number"
-                  step="0.1"
-                  value={form.meta_agua_litros}
-                  onChange={(e) => setForm((f) => ({ ...f, meta_agua_litros: e.target.value }))}
-                  required
-                />
-              </label>
               <div className="form-actions">
                 <button type="submit" disabled={savingProfile}>
                   {savingProfile ? 'Salvando...' : 'Salvar'}
@@ -180,7 +168,7 @@ export default function MemberProfileModal({ member, onClose }) {
             {summary.medidas.length === 0 ? (
               <p className="empty-state">Sem registros no período.</p>
             ) : (
-              <ul className="finance-category-breakdown">
+              <ul className="profile-summary-list">
                 {summary.medidas.map((m) => (
                   <li key={m.nome}>
                     <span>{m.nome}</span>

@@ -41,6 +41,12 @@ export default function MeasurementsSection() {
     if (!selectedNome && latest.length > 0) setSelectedNome(latest[0].nome)
   }, [latest, selectedNome])
 
+  // Com uma medida já selecionada (card ativo), o campo de nome vem pré-preenchido —
+  // só falta digitar o valor novo. Digitar outro nome ainda funciona normalmente.
+  useEffect(() => {
+    setNome(selectedNome)
+  }, [selectedNome])
+
   async function handleAdd(e) {
     e.preventDefault()
     setError('')
@@ -53,7 +59,6 @@ export default function MeasurementsSection() {
       return
     }
     setSelectedNome(nomeLimpo)
-    setNome('')
     setValor('')
     setData(todayISO())
     load()
