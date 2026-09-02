@@ -640,3 +640,44 @@ alter table public.calorie_logs add column if not exists proteina_g numeric;
 
 alter table public.exercise_logs add column if not exists categoria text check (categoria in ('cardio', 'forca'));
 alter table public.exercise_logs add column if not exists subcategoria text;
+
+-- ============ MIGRAÇÃO: caixinhas ============
+-- Caixinha = reserva dentro da própria conta, igual às do Nubank: só entra
+-- dinheiro vindo do saldo em conta (transferência), só sai voltando pro
+-- saldo em conta. Cada depósito/retirada é registrado como um finance_logs
+-- normal (despesa/receita) marcado com eh_transferencia_caixinha, pra contar
+-- certinho no saldo em conta sem precisar duplicar a lógica de cálculo.
+-- rendimento_caixinha guarda o valor que o usuário mesmo informa na retirada
+-- (a caixinha rende uns centavos que o app não tem como saber sozinho).
+--
+-- caixinha_id em finance_logs tem um segundo uso: uma despesa futura comum
+-- (não uma transferência) pode ser "vinculada" a uma caixinha só pra avisar
+-- a projeção que aquele valor já está reservado e não deveria ser descontado
+-- de novo. Isso é só informativo — no dia do vencimento nada acontece sozinho,
+-- quem decide se usa o dinheiro da caixinha é o usuário, retirando na hora.
+
+create table if not exists public.finance_pockets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references public.profiles (id) on delete cascade,
+  nome text not null,
+  saldo numeric not null default 0,
+  created_at timestamptz not null default now()
+);
+
+alter table public.finance_pockets enable row level security;
+
+create policy "finance_pockets_select_self" on public.finance_pockets
+  for select using (user_id = auth.uid());
+
+create policy "finance_pockets_insert_self" on public.finance_pockets
+  for insert with check (user_id = auth.uid());
+
+create policy "finance_pockets_update_self" on public.finance_pockets
+  for update using (user_id = auth.uid());
+
+create policy "finance_pockets_delete_self" on public.finance_pockets
+  for delete using (user_id = auth.uid());
+
+alter table public.finance_logs add column if not exists caixinha_id uuid references public.finance_pockets (id) on delete set null;
+alter table public.finance_logs add column if not exists eh_transferencia_caixinha boolean not null default false;
+alter table public.finance_logs add column if not exists rendimento_caixinha numeric;

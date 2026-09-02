@@ -26,6 +26,14 @@ export default function Financas() {
   const [novaForma, setNovaForma] = useState('debito')
   const [novaDescricao, setNovaDescricao] = useState('')
   const [novaData, setNovaData] = useState(todayISO())
+  const [novaCaixinhaId, setNovaCaixinhaId] = useState('')
+
+  const [pockets, setPockets] = useState([])
+  const [novaCaixinhaNome, setNovaCaixinhaNome] = useState('')
+  const [pocketActionId, setPocketActionId] = useState(null)
+  const [pocketActionTipo, setPocketActionTipo] = useState(null)
+  const [pocketValor, setPocketValor] = useState('')
+  const [pocketRendimento, setPocketRendimento] = useState('')
 
   const [editingSaldo, setEditingSaldo] = useState(false)
   const [novoSaldo, setNovoSaldo] = useState('')
@@ -36,18 +44,21 @@ export default function Financas() {
   const [editForma, setEditForma] = useState('debito')
   const [editDescricao, setEditDescricao] = useState('')
   const [editData, setEditData] = useState('')
+  const [editCaixinhaId, setEditCaixinhaId] = useState('')
 
   const [showAllLogs, setShowAllLogs] = useState(false)
   const LOGS_LIMIT = 10
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [logsRes, balanceRes] = await Promise.all([
+    const [logsRes, balanceRes, pocketsRes] = await Promise.all([
       supabase.from('finance_logs').select('*').eq('user_id', user.id).order('data', { ascending: false }),
       supabase.from('finance_balances').select('*').eq('user_id', user.id).maybeSingle(),
+      supabase.from('finance_pockets').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
     ])
     setLogs(logsRes.data ?? [])
     setBalance(balanceRes.data ?? null)
+    setPockets(pocketsRes.data ?? [])
     setLoading(false)
   }, [user.id])
 
@@ -66,6 +77,7 @@ export default function Financas() {
       forma_pagamento: isDespesa ? novaForma : null,
       descricao: novaDescricao || null,
       data: novaData,
+      caixinha_id: isDespesa && novaCaixinhaId ? novaCaixinhaId : null,
     })
     if (error) {
       setError(error.message)
@@ -73,6 +85,7 @@ export default function Financas() {
     }
     setNovoValor('')
     setNovaDescricao('')
+    setNovaCaixinhaId('')
     load()
   }
 
@@ -88,6 +101,7 @@ export default function Financas() {
     setEditForma(log.forma_pagamento || 'debito')
     setEditDescricao(log.descricao || '')
     setEditData(log.data)
+    setEditCaixinhaId(log.caixinha_id || '')
   }
 
   async function handleSaveEdit(id) {
@@ -101,6 +115,7 @@ export default function Financas() {
         forma_pagamento: isDespesa ? editForma : null,
         descricao: editDescricao || null,
         data: editData,
+        caixinha_id: isDespesa && editCaixinhaId ? editCaixinhaId : null,
       })
       .eq('id', id)
     if (error) {
@@ -178,6 +193,117 @@ export default function Financas() {
     load()
   }
 
+  async function handleCreatePocket(e) {
+    e.preventDefault()
+    if (!novaCaixinhaNome.trim()) return
+    setError('')
+    const { error } = await supabase.from('finance_pockets').insert({ user_id: user.id, nome: novaCaixinhaNome, saldo: 0 })
+    if (error) {
+      setError(error.message)
+      return
+    }
+    setNovaCaixinhaNome('')
+    load()
+  }
+
+  function startPocketAction(pocket, tipo) {
+    setPocketActionId(pocket.id)
+    setPocketActionTipo(tipo)
+    setPocketValor('')
+    setPocketRendimento('')
+    setError('')
+  }
+
+  function cancelPocketAction() {
+    setPocketActionId(null)
+    setPocketActionTipo(null)
+    setPocketValor('')
+    setPocketRendimento('')
+  }
+
+  async function handlePocketDeposit(pocket, e) {
+    e.preventDefault()
+    setError('')
+    const valor = Number(pocketValor)
+    if (!(valor > 0)) return
+    if (valor > saldoAtual) {
+      setError('Esse valor é maior que o saldo em conta disponível.')
+      return
+    }
+    const { error: insertError } = await supabase.from('finance_logs').insert({
+      user_id: user.id,
+      tipo: 'despesa',
+      valor,
+      forma_pagamento: 'debito',
+      descricao: `Caixinha: ${pocket.nome}`,
+      data: todayISO(),
+      caixinha_id: pocket.id,
+      eh_transferencia_caixinha: true,
+    })
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+    const { error: updateError } = await supabase
+      .from('finance_pockets')
+      .update({ saldo: Number(pocket.saldo) + valor })
+      .eq('id', pocket.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    cancelPocketAction()
+    load()
+  }
+
+  async function handlePocketWithdraw(pocket, e) {
+    e.preventDefault()
+    setError('')
+    const valor = Number(pocketValor)
+    const rendimento = pocketRendimento === '' ? 0 : Number(pocketRendimento)
+    if (!(valor > 0)) return
+    if (valor > Number(pocket.saldo)) {
+      setError('Esse valor é maior que o saldo guardado nessa caixinha.')
+      return
+    }
+    const total = valor + rendimento
+    const descricaoRendimento = rendimento > 0 ? ` (+ R$ ${rendimento.toFixed(2)} de rendimento)` : ''
+    const { error: insertError } = await supabase.from('finance_logs').insert({
+      user_id: user.id,
+      tipo: 'receita',
+      valor: total,
+      descricao: `Caixinha: ${pocket.nome}${descricaoRendimento}`,
+      data: todayISO(),
+      caixinha_id: pocket.id,
+      eh_transferencia_caixinha: true,
+      rendimento_caixinha: rendimento > 0 ? rendimento : null,
+    })
+    if (insertError) {
+      setError(insertError.message)
+      return
+    }
+    const { error: updateError } = await supabase
+      .from('finance_pockets')
+      .update({ saldo: Number(pocket.saldo) - valor })
+      .eq('id', pocket.id)
+    if (updateError) {
+      setError(updateError.message)
+      return
+    }
+    cancelPocketAction()
+    load()
+  }
+
+  async function handleDeletePocket(pocket) {
+    if (Number(pocket.saldo) !== 0) {
+      setError('Só dá pra excluir uma caixinha vazia. Retire o saldo antes.')
+      return
+    }
+    setError('')
+    await supabase.from('finance_pockets').delete().eq('id', pocket.id)
+    load()
+  }
+
   const hoje = todayISO()
   const saldoInicial = balance?.valor ?? 0
 
@@ -232,11 +358,17 @@ export default function Financas() {
     [logsFuturos, faturaAberta]
   )
 
+  const pocketById = useMemo(() => Object.fromEntries(pockets.map((p) => [p.id, p])), [pockets])
+
   // Se tudo que ainda não caiu (entradas e saídas futuras na conta) caísse hoje, e a fatura
   // em aberto fosse paga junto — sem limite de mês, pra dar pra planejar vários meses à frente.
+  // Saídas futuras vinculadas a uma caixinha ficam de fora: esse dinheiro já saiu do saldo
+  // quando foi guardado lá, contar de novo aqui seria descontar duas vezes.
   const projecao = useMemo(() => {
     const entrou = entradas.filter((l) => l.data > hoje).reduce((sum, l) => sum + Number(l.valor), 0)
-    const saiu = saidasConta.filter((l) => l.data > hoje).reduce((sum, l) => sum + Number(l.valor), 0)
+    const saiu = saidasConta
+      .filter((l) => l.data > hoje && !l.caixinha_id)
+      .reduce((sum, l) => sum + Number(l.valor), 0)
     return saldoAtual + entrou - saiu - faturaAberta
   }, [entradas, saidasConta, saldoAtual, faturaAberta, hoje])
 
@@ -283,6 +415,19 @@ export default function Financas() {
                 Descrição (opcional)
                 <input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
               </label>
+              {editTipo === 'despesa' && pockets.length > 0 && (
+                <label>
+                  Reservado numa caixinha? (opcional)
+                  <select value={editCaixinhaId} onChange={(e) => setEditCaixinhaId(e.target.value)}>
+                    <option value="">Nenhuma</option>
+                    {pockets.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.nome}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               <button type="button" onClick={() => handleSaveEdit(log.id)}>
                 Salvar
               </button>
@@ -300,16 +445,22 @@ export default function Financas() {
         <td data-label="Tipo">{log.tipo === 'receita' ? 'Entrada' : 'Saída'}</td>
         <td data-label="Descrição">
           {log.descricao || log.categoria || '-'}
-          {log.tipo === 'despesa' && (
-            <span className="finance-tags">
-              <span className="finance-tag">{formaLabel(log.forma_pagamento || 'debito')}</span>
-              {log.forma_pagamento === 'credito' && (
-                <span className={`finance-tag${log.fatura_paga ? '' : ' finance-tag-agendado'}`}>
-                  {log.fatura_paga ? 'paga' : 'em aberto'}
-                </span>
-              )}
-            </span>
-          )}
+          <span className="finance-tags">
+            {log.tipo === 'despesa' && (
+              <>
+                <span className="finance-tag">{formaLabel(log.forma_pagamento || 'debito')}</span>
+                {log.forma_pagamento === 'credito' && (
+                  <span className={`finance-tag${log.fatura_paga ? '' : ' finance-tag-agendado'}`}>
+                    {log.fatura_paga ? 'paga' : 'em aberto'}
+                  </span>
+                )}
+              </>
+            )}
+            {log.eh_transferencia_caixinha && <span className="finance-tag finance-tag-caixinha">caixinha</span>}
+            {!log.eh_transferencia_caixinha && log.caixinha_id && pocketById[log.caixinha_id] && (
+              <span className="finance-tag finance-tag-caixinha">coberta: {pocketById[log.caixinha_id].nome}</span>
+            )}
+          </span>
         </td>
         <td data-label="Valor" className={log.tipo === 'receita' ? 'finance-positive' : 'finance-negative'}>
           {log.tipo === 'receita' ? '+' : '-'}R$ {Number(log.valor).toFixed(2)}
@@ -324,7 +475,7 @@ export default function Financas() {
               >
                 <UndoIcon />
               </button>
-            ) : (
+            ) : log.eh_transferencia_caixinha ? null : (
               <>
                 <button className="icon-button" title="editar" onClick={() => startEdit(log)}>
                   <PencilIcon />
@@ -451,7 +602,8 @@ export default function Financas() {
         <h2>A vencer</h2>
         <p className="empty-state">
           Lançamentos com data futura — o que ainda não caiu na conta — somados à fatura do cartão já em aberto. Sem
-          limite de mês: lance quantos meses à frente quiser pra se planejar.
+          limite de mês: lance quantos meses à frente quiser pra se planejar. Saídas marcadas como "coberta" por uma
+          caixinha não entram na projeção abaixo, porque esse dinheiro já saiu do saldo quando foi guardado lá.
         </p>
         <p className="finance-invoice-note">
           Se tudo isso cair hoje, seu saldo em conta fica em{' '}
@@ -474,6 +626,92 @@ export default function Financas() {
             <tbody>{logsFuturos.map(renderRow)}</tbody>
           </table>
         )}
+      </div>
+
+      <div className="card finance-pockets-card">
+        <div className="card-heading-real">
+          <div>
+            <span className="section-kicker">Guardado à parte</span>
+            <h2>Caixinhas</h2>
+            <p>Reserve dinheiro do saldo em conta pra um objetivo, igual as caixinhas do banco.</p>
+          </div>
+        </div>
+
+        {pockets.length === 0 ? (
+          <p className="empty-state">Nenhuma caixinha ainda.</p>
+        ) : (
+          <ul className="pocket-list">
+            {pockets.map((p) => (
+              <li key={p.id} className="pocket-item">
+                <div className="pocket-item-head">
+                  <span className="pocket-item-nome">{p.nome}</span>
+                  <span className="pocket-item-saldo">R$ {Number(p.saldo).toFixed(2)}</span>
+                </div>
+
+                {pocketActionId === p.id ? (
+                  <form
+                    className="form-actions"
+                    onSubmit={(e) => (pocketActionTipo === 'deposito' ? handlePocketDeposit(p, e) : handlePocketWithdraw(p, e))}
+                  >
+                    <label>
+                      {pocketActionTipo === 'deposito' ? 'Valor a guardar (R$)' : 'Valor a retirar (R$)'}
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={pocketValor}
+                        onChange={(e) => setPocketValor(e.target.value)}
+                        required
+                      />
+                    </label>
+                    {pocketActionTipo === 'saque' && (
+                      <label>
+                        Rendimento (R$, opcional)
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={pocketRendimento}
+                          onChange={(e) => setPocketRendimento(e.target.value)}
+                          placeholder="Ex: 0,07"
+                        />
+                      </label>
+                    )}
+                    <button type="submit">{pocketActionTipo === 'deposito' ? 'Guardar' : 'Retirar'}</button>
+                    <button type="button" className="link-button" onClick={cancelPocketAction}>
+                      Cancelar
+                    </button>
+                  </form>
+                ) : (
+                  <div className="pocket-item-actions">
+                    <button type="button" className="link-button" onClick={() => startPocketAction(p, 'deposito')}>
+                      Guardar
+                    </button>
+                    <button type="button" className="link-button" onClick={() => startPocketAction(p, 'saque')}>
+                      Retirar
+                    </button>
+                    {Number(p.saldo) === 0 && (
+                      <button type="button" className="link-button" onClick={() => handleDeletePocket(p)}>
+                        Excluir
+                      </button>
+                    )}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form className="form-actions" onSubmit={handleCreatePocket}>
+          <label>
+            Nova caixinha
+            <input
+              value={novaCaixinhaNome}
+              onChange={(e) => setNovaCaixinhaNome(e.target.value)}
+              placeholder="Ex: Viagem, IPVA..."
+              required
+            />
+          </label>
+          <button type="submit">Criar</button>
+        </form>
       </div>
 
       <form className="card finance-register-card" onSubmit={handleAdd}>
@@ -513,6 +751,19 @@ export default function Financas() {
           Descrição (opcional)
           <input value={novaDescricao} onChange={(e) => setNovaDescricao(e.target.value)} placeholder="Ex: mercado" />
         </label>
+        {novoTipo === 'despesa' && pockets.length > 0 && (
+          <label>
+            Reservado numa caixinha? (opcional)
+            <select value={novaCaixinhaId} onChange={(e) => setNovaCaixinhaId(e.target.value)}>
+              <option value="">Nenhuma</option>
+              {pockets.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <button type="submit">Adicionar</button>
       </form>
 

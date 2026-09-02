@@ -1170,6 +1170,52 @@ button:disabled {
   color: var(--warning);
 }
 
+.finance-tag-caixinha {
+  background: rgba(108, 92, 231, 0.12);
+  border-color: transparent;
+  color: var(--primary);
+}
+
+.pocket-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pocket-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pocket-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.pocket-item-nome {
+  font-weight: 700;
+}
+
+.pocket-item-saldo {
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.pocket-item-actions {
+  display: flex;
+  gap: 14px;
+}
+
 /* Weight diff badge */
 
 .weight-diff {
