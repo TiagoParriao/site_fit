@@ -1216,6 +1216,12 @@ button:disabled {
   gap: 14px;
 }
 
+.pocket-item-vinculado {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
 /* Weight diff badge */
 
 .weight-diff {

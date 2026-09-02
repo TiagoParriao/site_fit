@@ -360,6 +360,18 @@ export default function Financas() {
 
   const pocketById = useMemo(() => Object.fromEntries(pockets.map((p) => [p.id, p])), [pockets])
 
+  // Quanto já está vinculado (saídas futuras marcadas como "coberta") em cada
+  // caixinha, pra mostrar quanto sobraria nela depois que essas contas saírem.
+  const vinculadoPorCaixinha = useMemo(() => {
+    const map = {}
+    for (const l of logsFuturos) {
+      if (l.tipo === 'despesa' && l.caixinha_id && !l.eh_transferencia_caixinha) {
+        map[l.caixinha_id] = (map[l.caixinha_id] ?? 0) + Number(l.valor)
+      }
+    }
+    return map
+  }, [logsFuturos])
+
   // Se tudo que ainda não caiu (entradas e saídas futuras na conta) caísse hoje, e a fatura
   // em aberto fosse paga junto — sem limite de mês, pra dar pra planejar vários meses à frente.
   // Saídas futuras vinculadas a uma caixinha ficam de fora: esse dinheiro já saiu do saldo
@@ -647,6 +659,16 @@ export default function Financas() {
                   <span className="pocket-item-nome">{p.nome}</span>
                   <span className="pocket-item-saldo">R$ {Number(p.saldo).toFixed(2)}</span>
                 </div>
+
+                {vinculadoPorCaixinha[p.id] > 0 && (
+                  <p className="pocket-item-vinculado">
+                    R$ {vinculadoPorCaixinha[p.id].toFixed(2)} já vinculado a contas a vencer — se sair, sobram{' '}
+                    <strong className={Number(p.saldo) - vinculadoPorCaixinha[p.id] < 0 ? 'finance-negative' : 'finance-positive'}>
+                      R$ {(Number(p.saldo) - vinculadoPorCaixinha[p.id]).toFixed(2)}
+                    </strong>
+                    .
+                  </p>
+                )}
 
                 {pocketActionId === p.id ? (
                   <form
