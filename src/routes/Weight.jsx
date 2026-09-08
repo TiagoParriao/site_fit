@@ -3,7 +3,15 @@ import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
 import WeightHistoryChart from '../components/WeightHistoryChart'
 import MeasurementsSection from '../components/MeasurementsSection'
-import { todayISO } from '../lib/dates'
+import { todayISO, isoDaysAgo } from '../lib/dates'
+
+const CHART_RANGES = [
+  { key: '14', label: '14 dias', dias: 14 },
+  { key: '30', label: '30 dias', dias: 30 },
+  { key: '90', label: '90 dias', dias: 90 },
+  { key: '365', label: '1 ano', dias: 365 },
+  { key: 'tudo', label: 'Tudo', dias: null },
+]
 import { PencilIcon, TrashIcon } from '../components/icons'
 
 export default function Weight() {
@@ -21,6 +29,8 @@ export default function Weight() {
   const [editingId, setEditingId] = useState(null)
   const [editPeso, setEditPeso] = useState('')
   const [editData, setEditData] = useState('')
+
+  const [chartRange, setChartRange] = useState('14')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -118,6 +128,13 @@ export default function Weight() {
     return { numero: goals.length, goal, atingida, restante }
   }, [goals, logs])
 
+  const chartLogs = useMemo(() => {
+    const dias = CHART_RANGES.find((r) => r.key === chartRange)?.dias
+    if (!dias) return logs
+    const corte = isoDaysAgo(dias - 1)
+    return logs.filter((l) => l.data >= corte)
+  }, [logs, chartRange])
+
   if (loading) return <div className="page-loading">Carregando...</div>
 
   return (
@@ -156,8 +173,20 @@ export default function Weight() {
         {diff && (
           <span className={`weight-diff weight-diff-chart${diff.delta > 0 ? ' up' : ''}`}>{diff.delta > 0 ? '+' : ''}{diff.delta.toFixed(1)} kg</span>
         )}
+        <div className="section-tabs weight-chart-range-tabs">
+          {CHART_RANGES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              className={`section-tab${chartRange === r.key ? ' active' : ''}`}
+              onClick={() => setChartRange(r.key)}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
         <WeightHistoryChart
-          logs={logs}
+          logs={chartLogs}
           goalKg={goalStatus?.goal.peso_meta_kg}
           goalLabel={
             goalStatus
