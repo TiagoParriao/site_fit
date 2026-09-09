@@ -49,45 +49,22 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
         <>
           <KcalHistoryChart dates={result.chartDates} series={result.chartSeries} />
 
-          <input type="checkbox" id="kcal-details-toggle" className="details-toggle-input" />
-          <label htmlFor="kcal-details-toggle" className="details-toggle-label link-button">
-            <span className="details-toggle-text-show">Ver detalhes por membro</span>
-            <span className="details-toggle-text-hide">Ocultar detalhes por membro</span>
-          </label>
-          <div className="details-toggle-content">
-            <div className="chart-legend">
+          <div className="kcal-history-details">
+            <div className="exercise-member-grid">
               {result.rows.map((r) => (
-                <span key={r.user_id}>
+                <div className="exercise-member-card" key={r.user_id}>
                   <span className="chart-legend-swatch" style={{ background: colorForUser(r.user_id, r.cor) }} />
-                  {r.nome} — consumiu {r.totalPeriodo} kcal / gastou {r.totalGastoPeriodo} kcal
-                </span>
+                  <div>
+                    <strong>{r.nome}</strong>
+                    <span>
+                      Meta {r.meta} kcal/dia · {r.diasRegistrados} {r.diasRegistrados === 1 ? 'dia registrado' : 'dias registrados'}
+                      {r.diasEstourados > 0 && ` · ${r.diasEstourados} acima da meta`}
+                    </span>
+                  </div>
+                  <b>{new Intl.NumberFormat('pt-BR').format(r.totalPeriodo)} kcal</b>
+                </div>
               ))}
             </div>
-
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Membro</th>
-                  <th>Meta diária</th>
-                  <th>Kcal consumidas</th>
-                  <th>Kcal gastas</th>
-                  <th>Dias registrados</th>
-                  <th>Dias acima da meta</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.rows.map((r) => (
-                  <tr key={r.user_id}>
-                    <td data-label="Membro">{r.nome}</td>
-                    <td data-label="Meta diária">{r.meta} kcal</td>
-                    <td data-label="Kcal consumidas">{r.totalPeriodo} kcal</td>
-                    <td data-label="Kcal gastas">{r.totalGastoPeriodo} kcal</td>
-                    <td data-label="Dias registrados">{r.diasRegistrados}</td>
-                    <td data-label="Dias acima da meta">{r.diasEstourados}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
 
             {result.rows.some((r) => r.diasEstouradosLista.length > 0) && (
               <ul className="overbudget-list">

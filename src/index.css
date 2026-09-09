@@ -404,6 +404,7 @@ button:disabled {
 .calorie-progress-label {
   font-size: 13px;
   color: var(--text-muted);
+  margin: 6px 0 0;
 }
 
 /* Weight chart */
@@ -872,43 +873,6 @@ button:disabled {
   }
 }
 
-/* Detalhes colapsáveis: escondidos só no celular, sempre abertos no desktop */
-
-.details-toggle-input {
-  display: none;
-}
-
-.details-toggle-label {
-  display: none;
-}
-
-.details-toggle-text-hide {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .details-toggle-label {
-    display: inline-block;
-    margin-top: 8px;
-  }
-
-  .details-toggle-content {
-    display: none;
-  }
-
-  .details-toggle-input:checked ~ .details-toggle-content {
-    display: block;
-  }
-
-  .details-toggle-input:checked ~ .details-toggle-label .details-toggle-text-show {
-    display: none;
-  }
-
-  .details-toggle-input:checked ~ .details-toggle-label .details-toggle-text-hide {
-    display: inline;
-  }
-}
-
 .chart-legend-swatch {
   display: inline-block;
   width: 10px;
@@ -978,9 +942,10 @@ button:disabled {
 /* Saldo de kcal */
 
 .kcal-saldo {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   color: var(--text-muted);
+  margin: 2px 0 0;
 }
 
 .kcal-saldo.negative {
@@ -1156,21 +1121,31 @@ button:disabled {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .challenge-history-item {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   font-size: 13px;
   color: var(--text-muted);
-  padding: 6px 0;
-  border-top: 1px solid var(--border);
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
 }
 
 .challenge-history-status {
-  font-weight: 600;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
 }
 
 /* Chart axes (Y gridlines + labels) */
