@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext'
 import CalorieProgressBar from './CalorieProgressBar'
 import { MEAL_TYPES, mealTypeLabel, suggestMealType } from '../lib/mealTypes'
 import { todayISO } from '../lib/dates'
-import { fetchWeeklyMetabolicBalance } from '../lib/metabolicBalance'
 import { PencilIcon, TrashIcon } from './icons'
 
 function nowHHMM() {
@@ -37,11 +36,6 @@ export default function CaloriesSection({ onDataChange }) {
 
   const [showEntries, setShowEntries] = useState(false)
 
-  const [metabolic, setMetabolic] = useState(null)
-  const [editingSexo, setEditingSexo] = useState(false)
-  const [novoSexo, setNovoSexo] = useState('M')
-  const [savingSexo, setSavingSexo] = useState(false)
-
   const load = useCallback(async () => {
     setLoading(true)
     const { data: rows } = await supabase
@@ -58,15 +52,6 @@ export default function CaloriesSection({ onDataChange }) {
     load()
   }, [load])
 
-  const loadMetabolic = useCallback(async () => {
-    const result = await fetchWeeklyMetabolicBalance(supabase, user.id, profile)
-    setMetabolic(result)
-  }, [user.id, profile])
-
-  useEffect(() => {
-    loadMetabolic()
-  }, [loadMetabolic])
-
   async function handleUpdateMeta(e) {
     e.preventDefault()
     if (savingMeta) return
@@ -80,21 +65,6 @@ export default function CaloriesSection({ onDataChange }) {
       setError(err.message)
     } finally {
       setSavingMeta(false)
-    }
-  }
-
-  async function handleSetSexo(e) {
-    e.preventDefault()
-    if (savingSexo) return
-    setError('')
-    setSavingSexo(true)
-    try {
-      await updateProfile({ sexo: novoSexo })
-      setEditingSexo(false)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setSavingSexo(false)
     }
   }
 
@@ -120,14 +90,12 @@ export default function CaloriesSection({ onDataChange }) {
     setHora(nowHHMM())
     setTipoRefeicao(suggestMealType(nowHHMM()))
     load()
-    loadMetabolic()
     onDataChange?.()
   }
 
   async function handleDelete(id) {
     await supabase.from('calorie_logs').delete().eq('id', id)
     load()
-    loadMetabolic()
     onDataChange?.()
   }
 
@@ -158,7 +126,6 @@ export default function CaloriesSection({ onDataChange }) {
     }
     setEditingId(null)
     load()
-    loadMetabolic()
     onDataChange?.()
   }
 
@@ -202,34 +169,6 @@ export default function CaloriesSection({ onDataChange }) {
         >
           Editar meta
         </button>
-      )}
-
-      {!metabolic && (
-        <div className="metabolic-balance">
-          <p className="empty-state">
-            Defina seu sexo pra calcular sua taxa metabólica basal — o saldo baseado nela aparece lá em cima, no
-            histórico do grupo, em "Ver saldo por TMB de cada membro".
-          </p>
-          {editingSexo ? (
-            <form onSubmit={handleSetSexo} className="form-actions">
-              <label>
-                Sexo
-                <select value={novoSexo} onChange={(e) => setNovoSexo(e.target.value)}>
-                  <option value="M">Masculino</option>
-                  <option value="F">Feminino</option>
-                </select>
-              </label>
-              <button type="submit" disabled={savingSexo}>{savingSexo ? 'Salvando...' : 'Salvar'}</button>
-              <button type="button" className="link-button" onClick={() => setEditingSexo(false)} disabled={savingSexo}>
-                Cancelar
-              </button>
-            </form>
-          ) : (
-            <button className="link-button" onClick={() => setEditingSexo(true)}>
-              Definir sexo
-            </button>
-          )}
-        </div>
       )}
 
       <form className="stacked-form" onSubmit={handleAdd}>

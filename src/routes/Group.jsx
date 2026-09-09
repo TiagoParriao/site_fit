@@ -21,7 +21,7 @@ export default function Group() {
     setLoading(true)
     const { data: memberships } = await supabase
       .from('group_members')
-      .select('group_id, groups(id, nome, invite_code, created_at)')
+      .select('group_id, groups(id, nome, invite_code, created_at, created_by)')
       .eq('user_id', user.id)
 
     const groupList = (memberships ?? []).map((m) => m.groups).filter(Boolean)
@@ -101,6 +101,18 @@ export default function Group() {
     load()
   }
 
+  async function handleRemoveMember(groupId, memberUserId, nome) {
+    const ok = window.confirm(`Remover ${nome} do grupo? Vocês deixam de ver os dados um do outro.`)
+    if (!ok) return
+    setError('')
+    const { error } = await supabase.from('group_members').delete().eq('group_id', groupId).eq('user_id', memberUserId)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    load()
+  }
+
   if (loading) return <div className="page-loading">Carregando...</div>
 
   return (
@@ -175,20 +187,31 @@ export default function Group() {
                         {m.profiles?.nome ?? 'Membro'}
                       </button>
                     </div>
-                    {m.user_id === user.id ? (
-                      <input
-                        type="color"
-                        className="color-input"
-                        value={colorForUser(m.user_id, m.profiles?.cor)}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                        title="Escolha sua cor"
-                      />
-                    ) : (
-                      <span
-                        className="color-swatch"
-                        style={{ background: colorForUser(m.user_id, m.profiles?.cor) }}
-                      />
-                    )}
+                    <div className="member-row-actions">
+                      {m.user_id === user.id ? (
+                        <input
+                          type="color"
+                          className="color-input"
+                          value={colorForUser(m.user_id, m.profiles?.cor)}
+                          onChange={(e) => handleColorChange(e.target.value)}
+                          title="Escolha sua cor"
+                        />
+                      ) : (
+                        <span
+                          className="color-swatch"
+                          style={{ background: colorForUser(m.user_id, m.profiles?.cor) }}
+                        />
+                      )}
+                      {g.created_by === user.id && m.user_id !== user.id && (
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => handleRemoveMember(g.id, m.user_id, m.profiles?.nome ?? 'Membro')}
+                        >
+                          Remover
+                        </button>
+                      )}
+                    </div>
                   </li>
                   {m.user_id === user.id && pickingAvatar && (
                     <li className="avatar-picker-row">

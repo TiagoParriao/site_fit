@@ -1,13 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { fetchGroupKcalHistory } from '../lib/kcalHistory'
-import { fetchGroupMetabolicHistory } from '../lib/metabolicGroupHistory'
 import { fetchGroupProteinHistory } from '../lib/proteinHistory'
 import { colorForUser } from '../lib/avatarColor'
-import { AnimalAvatar } from './AnimalIcons'
 import PeriodSelector from './PeriodSelector'
 import KcalHistoryChart from './KcalHistoryChart'
-import MetabolicHistoryChart from './MetabolicHistoryChart'
 import { todayISO } from '../lib/dates'
 
 export default function KcalHistoryPanel({ group, members, refreshKey }) {
@@ -16,12 +13,6 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
   const [start, setStart] = useState(todayISO())
   const [end, setEnd] = useState(todayISO())
   const [result, setResult] = useState({ rows: [], chartDates: [], chartSeries: [] })
-
-  const [metabolicPreset, setMetabolicPreset] = useState('semana')
-  const [metabolicDate, setMetabolicDate] = useState(todayISO())
-  const [metabolicStart, setMetabolicStart] = useState(todayISO())
-  const [metabolicEnd, setMetabolicEnd] = useState(todayISO())
-  const [metabolicResult, setMetabolicResult] = useState({ chartDates: [], chartSeries: [], membrosSemDados: [] })
 
   const load = useCallback(async () => {
     const [data, proteinData] = await Promise.all([
@@ -35,24 +26,10 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
     load()
   }, [load])
 
-  const loadMetabolic = useCallback(async () => {
-    const data = await fetchGroupMetabolicHistory(supabase, members, metabolicPreset, {
-      date: metabolicDate,
-      start: metabolicStart,
-      end: metabolicEnd,
-    })
-    setMetabolicResult(data)
-  }, [members, metabolicPreset, metabolicDate, metabolicStart, metabolicEnd, refreshKey])
-
-  useEffect(() => {
-    loadMetabolic()
-  }, [loadMetabolic])
-
   if (!group) return null
 
   return (
-    <div className="dashboard-insights-grid">
-      <section className="card kcal-history-card">
+    <section className="card kcal-history-card">
       <h2>Histórico de Calorias</h2>
 
       <PeriodSelector
@@ -185,87 +162,6 @@ export default function KcalHistoryPanel({ group, members, refreshKey }) {
           </div>
         </>
       )}
-      </section>
-      <section className="card metabolic-card">
-          <div className="card-heading-real">
-            <div><span className="section-kicker">Metabolismo do grupo</span><h2>Saldo calórico</h2><p>Gasto estimado menos consumo — apenas dias fechados.</p></div>
-          </div>
-          <PeriodSelector
-            preset={metabolicPreset}
-            onPresetChange={setMetabolicPreset}
-            date={metabolicDate}
-            onDateChange={setMetabolicDate}
-            start={metabolicStart}
-            onStartChange={setMetabolicStart}
-            end={metabolicEnd}
-            onEndChange={setMetabolicEnd}
-          />
-          <MetabolicHistoryChart
-            dates={metabolicResult.chartDates}
-            series={metabolicResult.chartSeries}
-            emptyMessage="Sem dados suficientes nesse período."
-          />
-          {metabolicResult.chartSeries.length > 0 && (
-            <div className="chart-legend">
-              {metabolicResult.chartSeries.map((s) => (
-                <span key={s.user_id}>
-                  <span className="chart-legend-swatch" style={{ background: colorForUser(s.user_id, s.cor) }} />
-                  {s.nome}
-                </span>
-              ))}
-            </div>
-          )}
-          {metabolicResult.membrosSemDados.length > 0 && (
-            <p className="empty-state">
-              {metabolicResult.membrosSemDados.join(', ')} ainda não {metabolicResult.membrosSemDados.length > 1 ? 'definiram' : 'definiu'} sexo, peso ou altura suficientes pra calcular a TMB.
-            </p>
-          )}
-          {metabolicResult.chartSeries.length > 0 && (
-            <div className="member-report-grid">
-              {metabolicResult.chartSeries.map((s) => {
-                const acumulado = s.values.reduce((sum, v) => sum + v, 0)
-                const positivo = acumulado >= 0
-                return (
-                  <div key={s.user_id} className="member-report-card">
-                    <div className="member-report-head">
-                      <span
-                        className="member-report-avatar"
-                        style={{ '--member-color': colorForUser(s.user_id, s.cor) }}
-                      >
-                        <AnimalAvatar avatarKey={s.avatarKey} size={28} />
-                      </span>
-                      <div>
-                        <span className="member-report-name">{s.nome}</span>
-                        <span className="member-report-status">Membro ativo</span>
-                      </div>
-                    </div>
-
-                    <div className="member-report-stats">
-                      <div className="member-report-stat">
-                        <span>Gasto total</span>
-                        <strong>{Math.round(s.totalGet).toLocaleString('pt-BR')} kcal</strong>
-                      </div>
-                      <div className="member-report-stat">
-                        <span>Gasto estimado hoje</span>
-                        <strong>{Math.round(s.getHoje).toLocaleString('pt-BR')} kcal</strong>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className="member-report-progress-head">
-                        <span>Saldo acumulado</span>
-                        <strong>{Math.abs(Math.round(acumulado)).toLocaleString('pt-BR')} kcal</strong>
-                      </div>
-                      <span className={`member-report-badge${positivo ? '' : ' negative'}`}>
-                        {positivo ? 'Saldo positivo' : 'Saldo negativo'}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-      </section>
-    </div>
+    </section>
   )
 }

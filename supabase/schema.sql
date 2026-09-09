@@ -681,3 +681,17 @@ create policy "finance_pockets_delete_self" on public.finance_pockets
 alter table public.finance_logs add column if not exists caixinha_id uuid references public.finance_pockets (id) on delete set null;
 alter table public.finance_logs add column if not exists eh_transferencia_caixinha boolean not null default false;
 alter table public.finance_logs add column if not exists rendimento_caixinha numeric;
+
+-- ============ MIGRAÇÃO: dono do grupo pode remover membros ============
+-- Só quem criou o grupo (groups.created_by) pode remover outra pessoa dele.
+-- Continua não existindo "sair do grupo" na tela por pedido explícito — isso
+-- aqui é só o criador tirando outra pessoa, não a própria pessoa saindo.
+
+create policy "group_members_delete_by_owner" on public.group_members
+  for delete using (
+    exists (
+      select 1 from public.groups
+      where groups.id = group_members.group_id
+        and groups.created_by = auth.uid()
+    )
+  );
